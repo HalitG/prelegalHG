@@ -65,6 +65,10 @@ export function buildCoverPage(form: NdaFormData, today: string): CoverPageModel
     field(pick(party1), placeholder),
     field(pick(party2), placeholder),
   ];
+  const effectiveDate = formatDate(form.effectiveDate ?? today);
+  // Signing dates default to the Effective Date. A blank date is already counted as missing
+  // in its own section, so here it just leaves a line to fill in by hand.
+  const signingDate: Piece = effectiveDate ? field(effectiveDate, "") : "";
 
   return {
     sections: [
@@ -75,7 +79,7 @@ export function buildCoverPage(form: NdaFormData, today: string): CoverPageModel
       },
       {
         title: "Effective Date",
-        paragraphs: [[field(formatDate(form.effectiveDate ?? today), "Effective date")]],
+        paragraphs: [[field(effectiveDate, "Effective date")]],
       },
       {
         title: "MNDA Term",
@@ -120,7 +124,7 @@ export function buildCoverPage(form: NdaFormData, today: string): CoverPageModel
         caption: "Use either email or postal address",
         cells: perParty((p) => p.noticeAddress, "Email or postal address"),
       },
-      { label: "Date", cells: ["", ""] },
+      { label: "Date", cells: [signingDate, signingDate] },
     ],
   };
 }

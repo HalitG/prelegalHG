@@ -73,6 +73,13 @@ describe("buildCoverPage", () => {
     ]);
   });
 
+  it("dates both signature columns with the Effective Date, or leaves them blank", () => {
+    const dateRow = (form: NdaFormData) =>
+      buildCoverPage(form, "").signatureRows.find((row) => row.label === "Date")!.cells.map((cell) => text([cell]));
+    expect(dateRow(filledForm)).toEqual(["March 1, 2026", "March 1, 2026"]);
+    expect(dateRow({ ...filledForm, effectiveDate: "" })).toEqual(["", ""]);
+  });
+
   it("puts each party in its own signature column", () => {
     const company = buildCoverPage(filledForm, "").signatureRows.find((row) => row.label === "Company")!;
     expect(company.cells.map((cell) => text([cell]))).toEqual(["Acme, Inc.", "Globex"]);
