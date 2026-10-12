@@ -20,7 +20,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${inter.variable} ${sourceSerif.variable} h-full`}>
-      <body className="min-h-full font-sans">{children}</body>
+      {/* Browser extensions often add attributes to <body> before React hydrates. This only
+          silences attribute mismatches on <body> itself, not on anything rendered inside it. */}
+      <body className="min-h-full font-sans" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
