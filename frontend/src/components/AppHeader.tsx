@@ -13,7 +13,7 @@ export function AppHeader() {
         <Logo />
         {state.status === "signed-in" && (
           <div className="ml-auto flex min-w-0 items-center gap-4">
-            <span className="hidden max-w-64 truncate text-sm text-muted sm:block" title={state.session.email}>
+            <span className="max-w-40 truncate text-sm text-muted sm:max-w-64" title={state.session.email}>
               {state.session.email}
             </span>
             <Button variant="outline" onClick={() => signOut()}>

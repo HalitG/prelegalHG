@@ -31,7 +31,9 @@ To see the build served the way it is in production, run the backend (see the ma
 - **Prototype sign-in.** `/login/` accepts any email and password. `src/lib/session.ts` keeps the email in
   `localStorage` and is the only code that knows how the session works, so real sign-in can replace it. Pages in the
   `src/app/(platform)/` route group are wrapped in `AuthGuard`, which sends signed-out visitors to `/login/`. Until
-  the browser has read the session, the guard shows a placeholder, so the static HTML never contains the platform.
+  the browser has read the session, the guard shows a placeholder, so signed-out visitors never see the platform.
+  This is not access control: the static HTML still carries the page's data, so anything private must come from
+  the backend once real sign-in exists.
 - **Templates are the source of truth.** `src/lib/nda/template.ts` reads `../templates/Mutual-NDA.md` and
   `../templates/Mutual-NDA-coverpage.md` at build time, so build the app from inside this repo. A small parser
   (`src/lib/nda/markdown.ts`) turns the markdown into plain data: clauses made of text, **bold**, links, and references

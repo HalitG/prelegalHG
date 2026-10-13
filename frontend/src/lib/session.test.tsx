@@ -6,9 +6,17 @@ import { parseSession, signIn, signOut, useSession } from "./session";
 
 afterEach(() => {
   cleanup();
-  localStorage.clear();
   vi.restoreAllMocks();
+  signOut();
 });
+
+function blockStorage() {
+  for (const method of ["getItem", "setItem", "removeItem"] as const) {
+    vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+      throw new Error("Storage is blocked");
+    });
+  }
+}
 
 describe("parseSession", () => {
   it("returns the stored email", () => {
@@ -67,10 +75,17 @@ describe("useSession", () => {
 
   it("treats unreadable storage as signed out", () => {
     signIn("jo@acme.com");
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("Storage is blocked");
-    });
+    blockStorage();
     const { result } = renderHook(useSession);
+    expect(result.current).toEqual({ status: "signed-out" });
+  });
+
+  it("still signs in and out when storage is blocked", () => {
+    blockStorage();
+    const { result } = renderHook(useSession);
+    act(() => signIn("jo@acme.com"));
+    expect(result.current).toEqual({ status: "signed-in", session: { email: "jo@acme.com" } });
+    act(() => signOut());
     expect(result.current).toEqual({ status: "signed-out" });
   });
 

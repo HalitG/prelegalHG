@@ -6,6 +6,7 @@ router = APIRouter()
 
 
 @router.get("/health")
+@router.head("/health", include_in_schema=False)
 def health() -> dict[str, str]:
     """Used by the Docker health check. The app only starts once its database exists, so this is enough."""
     return {"status": "ok"}

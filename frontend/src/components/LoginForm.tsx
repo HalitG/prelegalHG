@@ -22,10 +22,10 @@ export function LoginForm() {
 
   if (status === "signed-in") return <Splash />;
 
+  // The browser has already checked that both fields are filled in and the email looks valid.
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!email.trim() || !password) return;
-    signIn(email.trim());
+    signIn(email);
   }
 
   return (

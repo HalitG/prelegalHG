@@ -6,16 +6,7 @@ from pathlib import Path
 import pytest
 
 from app.db import connect, reset_database
-
-
-def add_user(db_path: Path, email: str) -> None:
-    with closing(connect(db_path)) as conn, conn:
-        conn.execute("INSERT INTO users (email, password_hash) VALUES (?, ?)", (email, "hash"))
-
-
-def count_users(db_path: Path) -> int:
-    with closing(connect(db_path)) as conn:
-        return conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+from tests.db_helpers import add_user, count_users
 
 
 def test_creates_the_users_table(tmp_path: Path):

@@ -1,19 +1,12 @@
 import logging
-from contextlib import closing
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.db import connect
 from app.main import create_app
-
-
-def count_users(db_path: Path) -> int:
-    with closing(connect(db_path)) as conn:
-        return conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-
+from tests.db_helpers import add_user, count_users
 
 # Startup
 
@@ -24,8 +17,7 @@ def test_startup_creates_the_database(client: TestClient, settings: Settings):
 
 def test_every_startup_begins_with_an_empty_database(settings: Settings):
     with TestClient(create_app(settings)):
-        with closing(connect(settings.db_path)) as conn, conn:
-            conn.execute("INSERT INTO users (email, password_hash) VALUES ('jo@acme.com', 'hash')")
+        add_user(settings.db_path, "jo@acme.com")
         assert count_users(settings.db_path) == 1
 
     with TestClient(create_app(settings)):
@@ -39,20 +31,25 @@ def test_health_reports_ok(client: TestClient):
     response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+    assert client.head("/api/health").status_code == 200
 
 
-@pytest.mark.parametrize("method", ["GET", "POST", "PUT", "PATCH", "DELETE"])
+@pytest.mark.parametrize("method", ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 def test_unknown_api_paths_get_a_json_404(client: TestClient, method: str):
-    for path in ("/api/does-not-exist", "/api/nested/does-not-exist"):
+    for path in ("/api", "/api/does-not-exist", "/api/nested/does-not-exist"):
         response = client.request(method, path)
         assert response.status_code == 404
-        assert response.json() == {"detail": "Not Found"}
+        assert response.headers["content-type"] == "application/json"
+        if method != "HEAD":
+            assert response.json() == {"detail": "Not Found"}
 
 
 def test_api_docs_live_under_api(client: TestClient):
     assert client.get("/api/docs").status_code == 200
+    assert client.get("/api/docs/oauth2-redirect").status_code == 200
     assert "/api/health" in client.get("/api/openapi.json").json()["paths"]
-    assert client.get("/docs").text == "<h1>Page not found</h1>"
+    for path in ("/docs", "/docs/oauth2-redirect"):
+        assert client.get(path).text == "<h1>Page not found</h1>"
 
 
 def test_api_routes_win_over_frontend_files(static_dir: Path, client: TestClient):
@@ -97,6 +94,16 @@ def test_pages_are_revalidated_but_hashed_assets_are_cached(client: TestClient):
     assert client.get("/does-not-exist/").headers["cache-control"] == "no-cache"
     asset = client.get("/_next/static/chunks/app.js")
     assert asset.headers["cache-control"] == "public, max-age=31536000, immutable"
+    unchanged = client.get("/_next/static/chunks/app.js", headers={"if-none-match": asset.headers["etag"]})
+    assert unchanged.status_code == 304
+    assert unchanged.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+
+def test_a_missing_hashed_asset_is_not_cached(client: TestClient):
+    # A later build can bring back a file with the same hash, so its 404 must not stick in the browser.
+    response = client.get("/_next/static/chunks/missing.js")
+    assert response.status_code == 404
+    assert response.headers["cache-control"] == "no-cache"
 
 
 def test_serves_the_api_without_a_frontend_build(tmp_path: Path, caplog: pytest.LogCaptureFixture):

@@ -8,7 +8,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 
 from app.api import router as api_router
 from app.config import Settings
@@ -30,19 +30,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="prelegal",
         lifespan=lifespan,
         docs_url="/api/docs",
+        swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect",
         redoc_url=None,
         openapi_url="/api/openapi.json",
     )
     app.include_router(api_router, prefix="/api")
 
-    # Unknown API paths get a JSON 404 instead of the frontend's HTML 404 page. Keep this after every API
-    # router and before the frontend, which matches every path.
-    @app.api_route(
-        "/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False
-    )
-    def api_not_found(path: str) -> None:
-        raise HTTPException(status_code=404)
-
+    # The frontend matches every path, so it goes last.
     if settings.static_dir.is_dir():
         app.mount("/", FrontendFiles(directory=settings.static_dir, html=True), name="frontend")
     else:

@@ -2,7 +2,8 @@ import { useMemo, useSyncExternalStore } from "react";
 
 /*
  * The prototype session. Nothing is authenticated: signing in just remembers the email in localStorage.
- * Real sign-in replaces this module and keeps its exports (useSession, signIn, signOut).
+ * Components only depend on useSession, signIn and signOut, so real sign-in replaces this module and the
+ * sign-in form, and the guarded pages stay as they are.
  */
 
 const STORAGE_KEY = "prelegal.session";
@@ -35,13 +36,28 @@ function notify() {
   listeners.forEach((listener) => listener());
 }
 
+// Holds the session when localStorage can't be written, e.g. when privacy settings block it. It then lasts
+// until the page is reloaded.
+let unsavedSession: string | null = null;
+
 /** The stored string rather than a parsed object, so the snapshot only changes when storage does. */
 function readStoredSession(): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    return localStorage.getItem(STORAGE_KEY) ?? unsavedSession;
   } catch {
-    return null; // Storage can be blocked by privacy settings; treat that as signed out.
+    return unsavedSession;
   }
+}
+
+function storeSession(value: string | null) {
+  unsavedSession = null;
+  try {
+    if (value === null) localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    unsavedSession = value;
+  }
+  notify();
 }
 
 export function parseSession(raw: string | null): Session | null {
@@ -69,11 +85,9 @@ export function useSession(): SessionState {
 
 /** Signs in as `email`. No password is checked or stored. */
 export function signIn(email: string) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ email } satisfies Session));
-  notify();
+  storeSession(JSON.stringify({ email } satisfies Session));
 }
 
 export function signOut() {
-  localStorage.removeItem(STORAGE_KEY);
-  notify();
+  storeSession(null);
 }

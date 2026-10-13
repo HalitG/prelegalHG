@@ -48,7 +48,7 @@ export function DownloadButton({ template, coverPage, fileName }: DownloadButton
           Couldn&rsquo;t create the PDF. Please try again.
         </p>
       )}
-      <Button onClick={download} disabled={status === "working"}>
+      <Button onClick={download} disabled={status === "working"} className="disabled:cursor-wait">
         {status === "working" ? (
           <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
