@@ -11,13 +11,13 @@ function Runs({ runs }: { runs: Run[] }) {
         return <strong key={i}>{run.text}</strong>;
       case "term":
         return (
-          <span key={i} className="underline decoration-indigo-300 decoration-dotted underline-offset-2">
+          <span key={i} className="underline decoration-primary/60 decoration-dotted underline-offset-2">
             {run.text}
           </span>
         );
       case "link":
         return (
-          <a key={i} href={run.href} target="_blank" rel="noreferrer" className="text-indigo-700 hover:underline">
+          <a key={i} href={run.href} target="_blank" rel="noreferrer" className="text-navy underline decoration-primary/60 underline-offset-2 hover:decoration-primary">
             {run.text}
           </a>
         );
@@ -29,9 +29,9 @@ function Runs({ runs }: { runs: Run[] }) {
 function PieceView({ piece }: { piece: Piece }) {
   if (typeof piece === "string") return piece;
   return piece.value ? (
-    <mark className="rounded-sm bg-indigo-50 px-0.5 whitespace-pre-line text-inherit">{piece.value}</mark>
+    <mark className="rounded-sm bg-primary/10 px-0.5 whitespace-pre-line text-inherit">{piece.value}</mark>
   ) : (
-    <span className="rounded-sm border border-dashed border-amber-300 bg-amber-50 px-1 font-sans text-[0.8em] text-amber-700">
+    <span className="rounded-sm border border-dashed border-accent bg-accent/10 px-1 font-sans text-[0.8em] text-amber-700">
       {piece.placeholder}
     </span>
   );
@@ -41,8 +41,8 @@ export function NdaPreview({ template, coverPage }: { template: MndaTemplate; co
   return (
     <article className="font-serif text-[13.5px] leading-relaxed text-slate-800" aria-label="Mutual NDA preview">
       <header className="mb-6 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Mutual Non-Disclosure Agreement</h2>
-        <p className="mt-1 font-sans text-[11px] font-semibold tracking-[0.2em] text-slate-400 uppercase">Cover Page</p>
+        <h2 className="text-2xl font-semibold tracking-tight">Mutual Non-Disclosure Agreement</h2>
+        <p className="mt-1 font-sans text-[11px] font-semibold tracking-[0.2em] text-muted uppercase">Cover Page</p>
       </header>
 
       <p className="text-slate-600">
@@ -53,8 +53,8 @@ export function NdaPreview({ template, coverPage }: { template: MndaTemplate; co
         {coverPage.sections.map((section) => (
           <section key={section.title} className="grid gap-1 py-3 sm:grid-cols-[11rem_1fr] sm:gap-4">
             <div>
-              <h3 className="font-semibold text-slate-900">{section.title}</h3>
-              {section.caption && <p className="font-sans text-[11px] text-slate-400">{section.caption}</p>}
+              <h3 className="font-semibold">{section.title}</h3>
+              {section.caption && <p className="font-sans text-[11px] text-muted">{section.caption}</p>}
             </div>
             <div className="space-y-1">
               {section.paragraphs.map((paragraph, i) => (
@@ -74,7 +74,7 @@ export function NdaPreview({ template, coverPage }: { template: MndaTemplate; co
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[28rem] border-collapse text-left">
           <thead>
-            <tr className="font-sans text-[11px] tracking-wider text-slate-500 uppercase">
+            <tr className="font-sans text-[11px] tracking-wider text-muted uppercase">
               <th className="w-[28%] border-b border-slate-300 py-2" />
               <th className="border-b border-slate-300 px-3 py-2 font-semibold">Party 1</th>
               <th className="border-b border-slate-300 px-3 py-2 font-semibold">Party 2</th>
@@ -86,7 +86,7 @@ export function NdaPreview({ template, coverPage }: { template: MndaTemplate; co
                 <th scope="row" className="border-b border-slate-200 py-2.5 pr-3 font-semibold text-slate-900">
                   {row.label}
                   {row.caption && (
-                    <span className="block font-sans text-[11px] font-normal text-slate-400">{row.caption}</span>
+                    <span className="block font-sans text-[11px] font-normal text-muted">{row.caption}</span>
                   )}
                 </th>
                 {row.cells.map((cell, i) => (
@@ -103,7 +103,7 @@ export function NdaPreview({ template, coverPage }: { template: MndaTemplate; co
         </table>
       </div>
 
-      <div className="my-10 flex items-center gap-3 font-sans text-[11px] tracking-[0.2em] text-slate-400 uppercase">
+      <div className="my-10 flex items-center gap-3 font-sans text-[11px] tracking-[0.2em] text-muted uppercase">
         <span className="h-px flex-1 bg-slate-200" />
         Standard Terms
         <span className="h-px flex-1 bg-slate-200" />
@@ -114,7 +114,7 @@ export function NdaPreview({ template, coverPage }: { template: MndaTemplate; co
           switch (block.type) {
             case "heading":
               return (
-                <h3 key={i} className="text-center text-lg font-semibold text-slate-900">
+                <h3 key={i} className="text-center text-lg font-semibold">
                   {block.text}
                 </h3>
               );
@@ -126,7 +126,7 @@ export function NdaPreview({ template, coverPage }: { template: MndaTemplate; co
               );
             case "paragraph":
               return (
-                <p key={i} className="pt-4 text-center font-sans text-[11px] text-slate-400">
+                <p key={i} className="pt-4 text-center font-sans text-[11px] text-muted">
                   <Runs runs={block.runs} />
                 </p>
               );

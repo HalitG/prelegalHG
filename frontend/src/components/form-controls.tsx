@@ -2,7 +2,7 @@ import { useId, type ReactNode } from "react";
 import { MAX_YEARS } from "@/lib/nda/coverPage";
 
 const inputClass =
-  "block rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-600 focus:outline-none";
+  "block rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset placeholder:text-muted focus:ring-2 focus:ring-primary focus:outline-none";
 
 export function FormSection({
   step,
@@ -18,12 +18,12 @@ export function FormSection({
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
       <div className="mb-5 flex items-start gap-3">
-        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">
+        <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-navy ring-1 ring-primary/30">
           {step}
         </span>
         <div>
-          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+          <h2 className="text-base font-semibold">{title}</h2>
+          {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
         </div>
       </div>
       <div className="space-y-4">{children}</div>
@@ -37,17 +37,34 @@ interface TextFieldProps {
   onChange: (value: string) => void;
   placeholder?: string;
   hint?: string;
-  type?: "text" | "date";
+  type?: "text" | "date" | "email" | "password";
   multiline?: boolean;
+  name?: string;
+  autoComplete?: string;
+  required?: boolean;
 }
 
-export function TextField({ label, value, onChange, placeholder, hint, type = "text", multiline }: TextFieldProps) {
+export function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+  type = "text",
+  multiline,
+  name,
+  autoComplete,
+  required,
+}: TextFieldProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const shared = {
     id,
+    name,
     value,
     placeholder,
+    autoComplete,
+    required,
     "aria-describedby": hintId,
     className: `${inputClass} w-full`,
   };
@@ -63,7 +80,7 @@ export function TextField({ label, value, onChange, placeholder, hint, type = "t
         <input {...shared} type={type} onChange={(e) => onChange(e.target.value)} />
       )}
       {hint && (
-        <p id={hintId} className="mt-1.5 text-xs text-slate-500">
+        <p id={hintId} className="mt-1.5 text-xs text-muted">
           {hint}
         </p>
       )}
@@ -96,7 +113,7 @@ export function ChoiceGroup<T extends string>({
         {options.map((option) => (
           <label
             key={option.value}
-            className="cursor-pointer rounded-md px-3 py-1.5 text-center text-sm font-medium text-slate-600 transition has-checked:bg-white has-checked:text-slate-900 has-checked:shadow-sm has-focus-visible:ring-2 has-focus-visible:ring-indigo-600"
+            className="cursor-pointer rounded-md px-3 py-1.5 text-center text-sm font-medium text-slate-600 transition has-checked:bg-white has-checked:text-navy has-checked:shadow-sm has-focus-visible:ring-2 has-focus-visible:ring-primary"
           >
             <input
               type="radio"

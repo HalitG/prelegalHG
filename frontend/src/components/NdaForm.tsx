@@ -24,7 +24,7 @@ export function NdaForm({ form, today, onChange }: NdaFormProps) {
             const party = form.parties[index];
             return (
               <div key={index} className="space-y-4">
-                <h3 className="text-xs font-semibold tracking-wider text-slate-500 uppercase">Party {index + 1}</h3>
+                <h3 className="text-xs font-semibold tracking-wider text-muted uppercase">Party {index + 1}</h3>
                 <TextField
                   label="Company"
                   value={party.company}

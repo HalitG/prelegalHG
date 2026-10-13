@@ -5,10 +5,28 @@
   --font-serif: var(--font-source-serif);
 }
 
+/* Brand palette. Each colour becomes a utility, e.g. bg-primary, text-navy, ring-accent. */
+@theme {
+  --color-accent: #ecad0a;
+  --color-primary: #209dd7;
+  --color-secondary: #753991; /* submit buttons */
+  --color-navy: #032147; /* headings */
+  --color-muted: #888888; /* secondary text: hints and captions only, it is too light for body copy */
+}
+
 :root {
   color-scheme: light;
 }
 
 body {
   @apply bg-slate-100 text-slate-900 antialiased;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-navy);
+  }
 }

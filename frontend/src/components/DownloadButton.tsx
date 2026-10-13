@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CoverPageModel } from "@/lib/nda/coverPage";
 import type { MndaTemplate } from "@/lib/nda/template";
+import { Button } from "./Button";
 
 interface DownloadButtonProps {
   template: MndaTemplate;
@@ -47,12 +48,7 @@ export function DownloadButton({ template, coverPage, fileName }: DownloadButton
           Couldn&rsquo;t create the PDF. Please try again.
         </p>
       )}
-      <button
-        type="button"
-        onClick={download}
-        disabled={status === "working"}
-        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold whitespace-nowrap text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-wait disabled:opacity-70"
-      >
+      <Button onClick={download} disabled={status === "working"}>
         {status === "working" ? (
           <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
@@ -65,7 +61,7 @@ export function DownloadButton({ template, coverPage, fileName }: DownloadButton
           </svg>
         )}
         {status === "working" ? "Preparing PDF…" : "Download PDF"}
-      </button>
+      </Button>
     </div>
   );
 }
