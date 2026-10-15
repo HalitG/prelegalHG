@@ -16,9 +16,13 @@ The app opens on a sign-in page. For now this is a prototype: any email and pass
 
 A web application for creating a Mutual Non-Disclosure Agreement (MNDA).
 
-- The user fills in a form with the key terms: the two parties and their signers, the purpose of sharing information, the effective date, how long the agreement lasts, how long information stays confidential, the governing law and jurisdiction, and any modifications.
-- The completed agreement is shown next to the form and updates as the user types. Fields that still need a value are highlighted.
+- The user chats with an AI assistant. It asks about the agreement one or two questions at a time: the two parties and their signers, the purpose of sharing information, the effective date, how long the agreement lasts, how long information stays confidential, the governing law and jurisdiction, and any modifications. It fills in the agreement from the answers.
+- The completed agreement is shown next to the chat and updates after each answer. Fields that still need a value are highlighted.
+- The user can also edit the fields directly in the "Edit the fields yourself" panel below the chat. The assistant sees those edits.
+- "Start over" begins a new conversation and a blank agreement. The conversation is not saved: reloading the page starts again.
 - The user can download the agreement as a PDF. It contains the completed Cover Page and the full Standard Terms. Fields left empty are printed as blank lines so they can be completed by hand.
+
+The assistant uses OpenAI (`gpt-5.4-mini`) and needs `OPENAI_API_KEY` in `.env`. Without it, the rest of the app works and the chat says that the assistant isn't available.
 
 ### Agreement templates
 
@@ -57,7 +61,7 @@ The frontend is built into static files, which the backend serves together with 
 
 Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) (on Linux, Docker Engine with Docker Compose 2.24 or later).
 
-1. Copy `.env.example` to `.env` and add your OpenAI API key. The application starts without it, but upcoming AI features need it.
+1. Copy `.env.example` to `.env` and add your OpenAI API key. The application starts without it, but the AI assistant needs it.
 2. Start the application with the script for your system. It builds the container, starts it, and waits until it is ready:
 
    | System  | Start                          | Stop                          |
@@ -74,7 +78,14 @@ Stopping the application discards the database. The application is only reachabl
 
 ## Development
 
-To work on the frontend on its own, with changes shown as you save:
+The backend reads `.env` from the repository root when it runs outside Docker, so the AI assistant works there too. This needs [uv](https://docs.astral.sh/uv/).
+
+To work on the frontend with changes shown as you save, start the backend and the frontend development server in two terminals:
+
+```bash
+cd backend
+uv run uvicorn app.main:create_app --factory --reload   # the API, at http://localhost:8000
+```
 
 ```bash
 cd frontend
@@ -82,9 +93,9 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:3000. The prototype sign-in works without the backend.
+Then open http://localhost:3000. The development server forwards `/api` requests to the backend at http://localhost:8000. The prototype sign-in works without the backend; the AI assistant needs it.
 
-To run the complete application without Docker, build the frontend and start the backend, which serves the build. This needs [uv](https://docs.astral.sh/uv/):
+To run the complete application without Docker, build the frontend and start the backend, which serves the build:
 
 ```bash
 cd frontend
@@ -106,6 +117,7 @@ The frontend reads files from `templates/` when it is built, so build it from in
 | `frontend` | `npm run build`          | Build the static files into `frontend/out`             |
 | `backend`  | `uv run pytest`          | Unit and integration tests                             |
 | `backend`  | `uv run pytest -m smoke` | Check the running container after starting it          |
+| `backend`  | `uv run pytest -m live`  | Check the AI assistant against OpenAI (uses your key)  |
 
 The backend tests also check the real frontend build when `frontend/out` exists.
 
@@ -117,6 +129,7 @@ The backend tests also check the real frontend build when `frontend/out` exists.
 - FastAPI and Python, managed with uv
 - SQLite for the database
 - Docker for packaging and running the application
+- OpenAI (`gpt-5.4-mini`, Structured Outputs) for the AI assistant
 - Vitest, Testing Library and pytest for tests
 
 ## Licenses

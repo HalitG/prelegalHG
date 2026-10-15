@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { buildCoverPage, countMissing, pdfFileName } from "@/lib/nda/coverPage";
 import type { MndaTemplate } from "@/lib/nda/template";
 import { defaultFormData, type NdaFormData } from "@/lib/nda/types";
+import { useNdaChat } from "@/lib/useNdaChat";
 import { useToday } from "@/lib/useToday";
 import { DownloadButton } from "./DownloadButton";
+import { NdaChat } from "./NdaChat";
 import { NdaForm } from "./NdaForm";
 import { NdaPreview } from "./NdaPreview";
 
@@ -26,13 +28,29 @@ function CompletionStatus({ missing }: { missing: number }) {
 export function NdaCreator({ template }: { template: MndaTemplate }) {
   const [form, setForm] = useState<NdaFormData>(defaultFormData);
   const today = useToday();
+  const chat = useNdaChat(form, setForm, today);
   const coverPage = useMemo(() => buildCoverPage(form, today), [form, today]);
   const missing = countMissing(coverPage);
   const download = <DownloadButton template={template} coverPage={coverPage} fileName={pdfFileName(form.parties)} />;
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
-      <NdaForm form={form} today={today} onChange={setForm} />
+      <div className="space-y-4">
+        <NdaChat {...chat} />
+
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-2xl bg-white px-5 py-3.5 text-sm font-semibold text-navy shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+            Edit the fields yourself
+            <span aria-hidden="true" className="text-muted transition group-open:rotate-180">
+              ▾
+            </span>
+          </summary>
+          {/* A reply replaces every field, so edits made while it is on its way would be lost. */}
+          <fieldset disabled={chat.status === "sending"} className="mt-4 disabled:opacity-60">
+            <NdaForm form={form} today={today} onChange={setForm} />
+          </fieldset>
+        </details>
+      </div>
 
       <section
         aria-label="Document preview"

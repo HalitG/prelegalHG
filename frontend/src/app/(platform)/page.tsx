@@ -12,8 +12,8 @@ export default function Home() {
       <div className="mb-8 max-w-2xl">
         <h1 className="text-3xl font-semibold tracking-tight">Create a Mutual NDA</h1>
         <p className="mt-2 text-slate-600">
-          Fill in the key terms and both parties&rsquo; details. The agreement updates as you type, and you can
-          download it as a PDF ready for signature.
+          Chat with the AI assistant about your agreement. It asks for the key terms and both parties&rsquo;
+          details and fills in the agreement as you go. Then download it as a PDF ready for signature.
         </p>
       </div>
       <NdaCreator template={loadMndaTemplate()} />

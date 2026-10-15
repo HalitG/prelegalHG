@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { MAX_YEARS } from "@/lib/nda/coverPage";
 
-const inputClass =
+export const inputClass =
   "block rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset placeholder:text-muted focus:ring-2 focus:ring-primary focus:outline-none";
 
 export function FormSection({
