@@ -10,6 +10,10 @@ from dotenv import dotenv_values
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 REPO_DIR = BACKEND_DIR.parent
 
+DOCUMENTS_DIR = Path(os.environ.get("PRELEGAL_DOCUMENTS_DIR", REPO_DIR))
+"""Where documents.json and catalog.json are. A constant rather than a setting: the AI chat's answer schema is
+built from them when app.chat is imported. Docker points it at the copies in the image."""
+
 
 @dataclass(frozen=True)
 class Settings:

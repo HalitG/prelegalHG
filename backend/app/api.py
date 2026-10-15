@@ -29,7 +29,7 @@ def get_chat_service(request: Request) -> ChatService:
 
 @router.post("/chat")
 def chat(body: ChatRequest, service: Annotated[ChatService, Depends(get_chat_service)]) -> ChatResponse:
-    """One turn of the AI chat that fills in the Mutual NDA."""
+    """One turn of the AI chat that picks an agreement and fills in its cover page."""
     try:
         return service.respond(body)
     except ChatError:

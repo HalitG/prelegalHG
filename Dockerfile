@@ -7,8 +7,9 @@ WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY frontend/ ./
-# The NDA page reads the agreement text from ../templates while it is built.
+# The build reads the agreements from ../templates, ../documents.json and ../catalog.json.
 COPY templates/ /build/templates/
+COPY documents.json catalog.json /build/
 RUN npm run build
 
 # Run the backend, which serves the API and the static frontend.
@@ -22,10 +23,13 @@ WORKDIR /app
 COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-dev
 COPY backend/app ./app
+# The AI chat reads the agreements' fields from these (see app/documents.py).
+COPY documents.json catalog.json ./
 COPY --from=frontend /build/frontend/out ./static
 RUN useradd --system --uid 10001 --no-create-home prelegal && mkdir data && chown prelegal data
 ENV PATH="/app/.venv/bin:$PATH" \
     PRELEGAL_STATIC_DIR=/app/static \
+    PRELEGAL_DOCUMENTS_DIR=/app \
     PRELEGAL_DB_PATH=/app/data/prelegal.db
 USER 10001
 EXPOSE 8000
