@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-documents.mts",
     "dev": "next dev",
+    "prebuild": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-documents.mts",
     "build": "next build",
     "lint": "eslint",
     "test": "vitest run"

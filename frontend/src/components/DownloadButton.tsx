@@ -1,29 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import type { CoverPageModel } from "@/lib/nda/coverPage";
-import type { MndaTemplate } from "@/lib/nda/template";
+import type { CoverPageModel } from "@/lib/documents/coverPage";
+import type { DocumentDef, DocumentText } from "@/lib/documents/types";
 import { Button } from "./Button";
 
 interface DownloadButtonProps {
-  template: MndaTemplate;
+  document: DocumentDef;
+  /** Null while the agreement's text is still loading. */
+  text: DocumentText | null;
   coverPage: CoverPageModel;
   fileName: string;
 }
 
-export function DownloadButton({ template, coverPage, fileName }: DownloadButtonProps) {
+export function DownloadButton({ document: agreement, text, coverPage, fileName }: DownloadButtonProps) {
   const [status, setStatus] = useState<"idle" | "working" | "error">("idle");
 
   async function download() {
+    if (!text) return;
     setStatus("working");
     try {
       // The PDF renderer is large, so it is only loaded when someone actually downloads.
-      const [{ pdf }, { NdaPdfDocument, registerPdfFonts }] = await Promise.all([
+      const [{ pdf }, { DocumentPdf, registerPdfFonts }] = await Promise.all([
         import("@react-pdf/renderer"),
-        import("./NdaPdf"),
+        import("./DocumentPdf"),
       ]);
       registerPdfFonts("/fonts");
-      const blob = await pdf(<NdaPdfDocument template={template} coverPage={coverPage} />).toBlob();
+      const blob = await pdf(<DocumentPdf document={agreement} text={text} coverPage={coverPage} />).toBlob();
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -36,7 +39,7 @@ export function DownloadButton({ template, coverPage, fileName }: DownloadButton
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
       setStatus("idle");
     } catch (error) {
-      console.error("Failed to generate the NDA PDF", error);
+      console.error("Failed to generate the PDF", error);
       setStatus("error");
     }
   }
@@ -48,7 +51,7 @@ export function DownloadButton({ template, coverPage, fileName }: DownloadButton
           Couldn&rsquo;t create the PDF. Please try again.
         </p>
       )}
-      <Button onClick={download} disabled={status === "working"} className="disabled:cursor-wait">
+      <Button onClick={download} disabled={!text || status === "working"} className="disabled:cursor-wait">
         {status === "working" ? (
           <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
