@@ -1,0 +1,19 @@
+# Keep the build context small, and secrets and local builds out of the image.
+.git
+.claude
+.env
+.env.*
+.vscode
+.idea
+scripts
+**/node_modules
+**/.next
+frontend/out
+frontend/next-env.d.ts
+**/*.tsbuildinfo
+**/.venv
+**/__pycache__
+**/.pytest_cache
+backend/data
+backend/tests
+**/*.db

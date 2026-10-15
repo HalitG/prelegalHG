@@ -8,6 +8,10 @@ prelegalHG helps people prepare standard business agreements without starting fr
 
 ## What it does today
 
+### Sign-in
+
+The app opens on a sign-in page. For now this is a prototype: any email and password let you in, nothing is checked, and the email is only remembered in your browser. The header shows who is signed in and has a Sign out button.
+
 ### Mutual NDA creator
 
 A web application for creating a Mutual Non-Disclosure Agreement (MNDA).
@@ -38,14 +42,39 @@ The Mutual NDA creator reads its agreement text directly from these files, so th
 
 ```
 prelegalHG/
-  frontend/      Next.js web application (the Mutual NDA creator)
+  frontend/      Next.js web application, built into static files
+  backend/       FastAPI application that serves the API, the frontend and the database
+  scripts/       Start and stop scripts for Mac, Linux and Windows
   templates/     Common Paper agreement templates in Markdown
   catalog.json   Name, description and file name of each template
+  Dockerfile     Builds the whole application into one container image
+  compose.yaml   Runs that image
 ```
+
+The frontend is built into static files, which the backend serves together with its API under `/api`. The backend uses a SQLite database that is temporary: it starts empty every time the application starts.
 
 ## Running the application
 
-Requirements: Node.js 20 or later.
+Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) (on Linux, Docker Engine with Docker Compose 2.24 or later).
+
+1. Copy `.env.example` to `.env` and add your OpenAI API key. The application starts without it, but upcoming AI features need it.
+2. Start the application with the script for your system. It builds the container, starts it, and waits until it is ready:
+
+   | System  | Start                          | Stop                          |
+   | ------- | ------------------------------ | ----------------------------- |
+   | Mac     | `scripts/start-mac.sh`         | `scripts/stop-mac.sh`         |
+   | Linux   | `scripts/start-linux.sh`       | `scripts/stop-linux.sh`       |
+   | Windows | `scripts\start-windows.ps1`    | `scripts\stop-windows.ps1`    |
+
+3. Open http://localhost:8000.
+
+If PowerShell refuses to run the Windows scripts, run them with `powershell -ExecutionPolicy Bypass -File scripts\start-windows.ps1`.
+
+Stopping the application discards the database. The application is only reachable from your own computer.
+
+## Development
+
+To work on the frontend on its own, with changes shown as you save:
 
 ```bash
 cd frontend
@@ -53,25 +82,42 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:3000.
+Then open http://localhost:3000. The prototype sign-in works without the backend.
 
-Other commands, run from the `frontend` folder:
+To run the complete application without Docker, build the frontend and start the backend, which serves the build. This needs [uv](https://docs.astral.sh/uv/):
 
-| Command         | Description                         |
-| --------------- | ----------------------------------- |
-| `npm test`      | Run the unit tests                  |
-| `npm run lint`  | Check the code with ESLint          |
-| `npm run build` | Create a production build           |
-| `npm start`     | Serve the production build          |
+```bash
+cd frontend
+npm run build
+cd ../backend
+uv run uvicorn app.main:create_app --factory --reload
+```
 
-The application reads files from `templates/` when it is built, so build it from inside the full repository.
+Then open http://localhost:8000.
+
+The frontend reads files from `templates/` when it is built, so build it from inside the full repository.
+
+### Tests
+
+| Folder     | Command                  | Description                                            |
+| ---------- | ------------------------ | ------------------------------------------------------ |
+| `frontend` | `npm test`               | Unit and component tests                               |
+| `frontend` | `npm run lint`           | Check the code with ESLint                             |
+| `frontend` | `npm run build`          | Build the static files into `frontend/out`             |
+| `backend`  | `uv run pytest`          | Unit and integration tests                             |
+| `backend`  | `uv run pytest -m smoke` | Check the running container after starting it          |
+
+The backend tests also check the real frontend build when `frontend/out` exists.
 
 ## Technology
 
-- Next.js, React and TypeScript
+- Next.js, React and TypeScript, exported as static files
 - Tailwind CSS for styling
 - React PDF for generating the downloadable PDF
-- Vitest for unit tests
+- FastAPI and Python, managed with uv
+- SQLite for the database
+- Docker for packaging and running the application
+- Vitest, Testing Library and pytest for tests
 
 ## Licenses
 

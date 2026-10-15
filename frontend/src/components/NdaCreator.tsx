@@ -17,7 +17,7 @@ function CompletionStatus({ missing }: { missing: number }) {
     </span>
   ) : (
     <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
-      <span className="size-2 rounded-full bg-amber-400" aria-hidden="true" />
+      <span className="size-2 rounded-full bg-accent" aria-hidden="true" />
       {missing} {missing === 1 ? "field" : "fields"} left
     </span>
   );
@@ -40,7 +40,7 @@ export function NdaCreator({ template }: { template: MndaTemplate }) {
       >
         <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-3">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-slate-900">Preview</h2>
+            <h2 className="text-sm font-semibold">Preview</h2>
             <span aria-live="polite">
               <CompletionStatus missing={missing} />
             </span>

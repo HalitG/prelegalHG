@@ -1,0 +1,26 @@
+[project]
+name = "prelegal-backend"
+version = "0.1.0"
+description = "The prelegal web app: a JSON API, the static frontend and a temporary SQLite database."
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.143.0",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+]
+
+[tool.uv]
+# An application, not a library: there is nothing to build or install.
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+# Smoke tests need a running container, so they only run when asked for with `-m smoke`.
+addopts = "-m 'not smoke'"
+markers = ["smoke: checks the running Docker container (start it with scripts/start-*)"]
