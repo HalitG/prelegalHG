@@ -5,11 +5,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app import auth, saved
+from app.auth import SignedIn
 from app.chat import ChatError, ChatRequest, ChatResponse, ChatService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+router.include_router(auth.router)
+router.include_router(saved.router)
 
 
 @router.get("/health")
@@ -28,8 +32,13 @@ def get_chat_service(request: Request) -> ChatService:
 
 
 @router.post("/chat")
-def chat(body: ChatRequest, service: Annotated[ChatService, Depends(get_chat_service)]) -> ChatResponse:
-    """One turn of the AI chat that picks an agreement and fills in its cover page."""
+def chat(
+    _: SignedIn,
+    body: ChatRequest,
+    service: Annotated[ChatService, Depends(get_chat_service)],
+) -> ChatResponse:
+    """One turn of the AI chat that picks an agreement and fills in its cover page. Only for signed-in users, so
+    only they can spend the OpenAI key."""
     try:
         return service.respond(body)
     except ChatError:

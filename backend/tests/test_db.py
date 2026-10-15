@@ -9,12 +9,31 @@ from app.db import connect, reset_database
 from tests.db_helpers import add_user, count_users
 
 
-def test_creates_the_users_table(tmp_path: Path):
+@pytest.mark.parametrize(
+    ("table", "columns"),
+    [
+        ("users", ["id", "name", "email", "password_hash", "created_at"]),
+        ("sessions", ["token_hash", "user_id", "expires_at"]),
+        ("documents", ["id", "user_id", "data", "updated_at"]),
+    ],
+)
+def test_creates_the_tables(tmp_path: Path, table: str, columns: list[str]):
     db_path = tmp_path / "prelegal.db"
     reset_database(db_path)
     with closing(connect(db_path)) as conn:
-        columns = [row["name"] for row in conn.execute("PRAGMA table_info(users)")]
-    assert columns == ["id", "email", "password_hash", "created_at"]
+        assert [row["name"] for row in conn.execute(f"PRAGMA table_info({table})")] == columns
+
+
+def test_deleting_a_user_deletes_their_sessions_and_documents(tmp_path: Path):
+    db_path = tmp_path / "prelegal.db"
+    reset_database(db_path)
+    user_id = add_user(db_path, "jo@acme.com")
+    with closing(connect(db_path)) as conn, conn:
+        conn.execute("INSERT INTO sessions (token_hash, user_id) VALUES ('t', ?)", (user_id,))
+        conn.execute("INSERT INTO documents (id, user_id, data) VALUES ('d', ?, '{}')", (user_id,))
+        conn.execute("DELETE FROM users")
+        assert conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 0
 
 
 def test_creates_missing_folders(tmp_path: Path):

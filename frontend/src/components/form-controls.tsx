@@ -1,8 +1,17 @@
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { MAX_YEARS } from "@/lib/documents/fields";
 
 export const inputClass =
-  "block rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset placeholder:text-muted focus:ring-2 focus:ring-primary focus:outline-none";
+  "block rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset placeholder:text-muted focus:ring-2 focus:ring-primary focus:outline-none aria-invalid:ring-red-500 aria-invalid:focus:ring-red-500";
+
+/** A field's error message, linked to the field with aria-describedby. */
+function FieldError({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <p id={id} className="mt-1.5 text-xs font-medium text-red-700">
+      {children}
+    </p>
+  );
+}
 
 export function FormSection({
   step,
@@ -43,6 +52,10 @@ interface TextFieldProps {
   autoComplete?: string;
   required?: boolean;
   maxLength?: number;
+  /** Shown under the field, which is marked invalid. */
+  error?: string;
+  /** Sits inside the input on the right, e.g. a button that shows the password. */
+  trailing?: ReactNode;
 }
 
 export function TextField({
@@ -57,9 +70,13 @@ export function TextField({
   autoComplete,
   required,
   maxLength,
+  error,
+  trailing,
 }: TextFieldProps) {
   const id = useId();
-  const hintId = hint ? `${id}-hint` : undefined;
+  // The error replaces the hint while there is one.
+  const hintId = hint && !error ? `${id}-hint` : undefined;
+  const errorId = error ? `${id}-error` : undefined;
   const shared = {
     id,
     name,
@@ -68,8 +85,9 @@ export function TextField({
     autoComplete,
     required,
     maxLength,
-    "aria-describedby": hintId,
-    className: `${inputClass} w-full`,
+    "aria-invalid": error ? true : undefined,
+    "aria-describedby": [errorId, hintId].filter(Boolean).join(" ") || undefined,
+    className: `${inputClass} w-full ${trailing ? "pr-16" : ""}`,
   };
 
   return (
@@ -80,13 +98,75 @@ export function TextField({
       {multiline ? (
         <textarea {...shared} rows={3} onChange={(e) => onChange(e.target.value)} className={`${shared.className} resize-y`} />
       ) : (
-        <input {...shared} type={type} onChange={(e) => onChange(e.target.value)} />
+        <div className="relative">
+          <input {...shared} type={type} onChange={(e) => onChange(e.target.value)} />
+          {trailing && <div className="absolute inset-y-0 right-0 flex items-center pr-1.5">{trailing}</div>}
+        </div>
       )}
-      {hint && (
-        <p id={hintId} className="mt-1.5 text-xs text-muted">
+      {error && <FieldError id={errorId!}>{error}</FieldError>}
+      {hintId && (
+        <p id={hintId} className="mt-1.5 text-xs text-slate-500">
           {hint}
         </p>
       )}
+    </div>
+  );
+}
+
+/** A password field with a button that shows what was typed. */
+export function PasswordField(props: Omit<TextFieldProps, "type" | "trailing" | "multiline">) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <TextField
+      {...props}
+      type={visible ? "text" : "password"}
+      trailing={
+        <button
+          type="button"
+          onClick={() => setVisible(!visible)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          className="rounded-md px-2 py-1 text-xs font-semibold text-navy hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          {visible ? "Hide" : "Show"}
+        </button>
+      }
+    />
+  );
+}
+
+export function CheckboxField({
+  label,
+  checked,
+  onChange,
+  error,
+  name,
+}: {
+  label: ReactNode;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  error?: string;
+  name?: string;
+}) {
+  const id = useId();
+  const errorId = error ? `${id}-error` : undefined;
+  return (
+    <div>
+      <div className="flex items-start gap-3">
+        <input
+          id={id}
+          name={name}
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={errorId}
+          className="mt-0.5 size-4 shrink-0 rounded border-slate-300 accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        />
+        <label htmlFor={id} className="text-sm leading-snug text-slate-700">
+          {label}
+        </label>
+      </div>
+      {error && <FieldError id={errorId!}>{error}</FieldError>}
     </div>
   );
 }

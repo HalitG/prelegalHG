@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GREETING, type ChatResult } from "@/lib/chat";
+import { DISCLAIMER } from "@/lib/disclaimer";
 import { documentText } from "@/lib/documents/build";
 import { loadDocuments } from "@/lib/documents/registry";
 import { emptyState, type DocState } from "@/lib/documents/types";
@@ -41,14 +42,18 @@ beforeEach(() => {
       await heldTexts.get(text[1]);
       return json(documentText(documents.find((document) => document.id === text[1])!));
     }
+    // Saving, which happens a moment after each change once an agreement is chosen.
+    if (url.startsWith("/api/documents/")) return json({ id: url.split("/").pop(), updatedAt: "2026-10-16T10:00:00Z" });
     const answer = chatAnswers.shift();
     if (!answer) throw new Error(`Unexpected request to ${url}`);
     return answer();
   });
 });
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
+  // Unmounting saves what was waiting to be saved; let that finish within this test.
+  await new Promise((resolve) => setTimeout(resolve, 0));
   fetchMock.mockReset();
   chatAnswers = [];
   failingTexts = new Set();
@@ -75,6 +80,12 @@ function deferredAnswer() {
 }
 
 const chatRequests = () => fetchMock.mock.calls.filter(([url]) => url === "/api/chat");
+const saves = () =>
+  fetchMock.mock.calls
+    .filter(([url]) => String(url).startsWith("/api/documents/"))
+    .map(([url, init]) => ({ id: String(url).split("/").pop(), body: JSON.parse(init?.body as string) }));
+/** Saving waits a moment after the last change. */
+const waitForSave = (count = 1) => waitFor(() => expect(saves()).toHaveLength(count), { timeout: 3000 });
 const requestBody = (call = 0) => JSON.parse(chatRequests()[call][1]?.body as string);
 const conversation = () => within(screen.getByRole("log", { name: "Conversation" }));
 const preview = (name = "Mutual Non-Disclosure Agreement") => screen.getByRole("article", { name: `${name} preview` });
@@ -342,5 +353,89 @@ describe("DocumentCreator", () => {
     expect(alert.textContent).toContain("Couldn’t load the Standard Terms");
     await user.click(within(alert).getByRole("button", { name: "Retry" }));
     expect(await within(preview("Pilot Agreement")).findByText(/Pilot Access/)).toBeTruthy();
+  });
+
+  it("saves the agreement and the conversation once an agreement is chosen", async () => {
+    answer("A Mutual NDA it is.", { document: "mutual-nda", parties }, "What is it for?");
+    render(<DocumentCreator documents={documents} />);
+    await say("An NDA with Globex");
+
+    await waitForSave();
+    const [{ id, body }] = saves();
+    expect(id).toMatch(/^[0-9a-f]{32}$/);
+    expect(body).toMatchObject({ document: "mutual-nda", parties });
+    expect(body.messages.map((message: { role: string }) => message.role)).toEqual(["assistant", "user", "assistant"]);
+    expect(await screen.findByText("Saved")).toBeTruthy();
+  });
+
+  it("doesn't save before an agreement is chosen", async () => {
+    answer("Which agreement do you need?");
+    render(<DocumentCreator documents={documents} />);
+    await say("Hello");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(saves()).toEqual([]);
+  });
+
+  it("shows that the agreement is a draft, above the preview", async () => {
+    answer("A Mutual NDA it is.", { document: "mutual-nda" });
+    render(<DocumentCreator documents={documents} />);
+    expect(screen.queryByRole("note")).toBeNull();
+    await say("An NDA");
+    expect(screen.getByRole("note").textContent).toContain(DISCLAIMER);
+  });
+
+  it("carries on with a saved agreement and its conversation", async () => {
+    const messages = [GREETING, { role: "user" as const, content: "An NDA with Globex" }];
+    const saved = {
+      id: "c".repeat(32),
+      document: "mutual-nda",
+      values: {},
+      parties,
+      messages,
+      revision: 4,
+      updatedAt: "now",
+    };
+    render(<DocumentCreator documents={documents} initial={saved} />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Edit the Mutual Non-Disclosure Agreement");
+    expect(conversation().getByText("An NDA with Globex")).toBeTruthy();
+    expect(preview().textContent).toContain("Globex Corporation");
+    expect(screen.getByText("Saved")).toBeTruthy();
+
+    answer("A Cloud Service Agreement suits that better.", { document: "csa", parties });
+    await say("Actually it's for our hosted software");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Edit the Cloud Service Agreement");
+    expect(requestBody().messages).toEqual([...messages, { role: "user", content: "Actually it's for our hosted software" }]);
+    await waitForSave();
+    expect(saves()[0].id).toBe("c".repeat(32));
+    expect(saves()[0].body.revision).toBe(5);
+  });
+
+  it("doesn't save a conversation whose last message got no reply", async () => {
+    answer("A Mutual NDA it is.", { document: "mutual-nda" });
+    render(<DocumentCreator documents={documents} />);
+    await say("An NDA");
+    await waitForSave();
+    chatAnswers.push(async () => json({}, 502));
+    await say("For a deal");
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(saves()).toHaveLength(1);
+  });
+
+  it("saves a new agreement under a new id after starting over", async () => {
+    const onStartOver = vi.fn();
+    answer("A Mutual NDA it is.", { document: "mutual-nda" });
+    render(<DocumentCreator documents={documents} onStartOver={onStartOver} />);
+    const user = await say("An NDA");
+    await waitForSave();
+
+    await user.click(screen.getByRole("button", { name: "Start over" }));
+    expect(onStartOver).toHaveBeenCalledTimes(1);
+    answer("A Cloud Service Agreement it is.", { document: "csa" });
+    await say("A CSA");
+    await waitForSave(2);
+    const [first, second] = saves();
+    expect(second.id).not.toBe(first.id);
+    expect(second.body.document).toBe("csa");
   });
 });

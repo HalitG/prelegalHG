@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from tests.auth_helpers import sign_up
 
 
 @pytest.fixture
@@ -15,6 +16,8 @@ def static_dir(tmp_path: Path) -> Path:
         "index.html": "<h1>Platform</h1>",
         "404.html": "<h1>Page not found</h1>",
         "login/index.html": "<h1>Sign in</h1>",
+        "signup/index.html": "<h1>Create your account</h1>",
+        "documents/index.html": "<h1>My documents</h1>",
         "_next/static/chunks/app.js": "console.log('app')",
         "fonts/SourceSerif4-Regular.ttf": "font",
     }
@@ -34,3 +37,10 @@ def client(settings: Settings):
     # Entering the client runs the app's startup, which creates the database.
     with TestClient(create_app(settings)) as client:
         yield client
+
+
+@pytest.fixture
+def signed_in(client: TestClient) -> TestClient:
+    """The client, signed in as a new user (jo@acme.com)."""
+    sign_up(client)
+    return client

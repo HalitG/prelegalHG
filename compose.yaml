@@ -7,7 +7,7 @@ services:
     image: prelegal
     container_name: prelegal
     ports:
-      # Only reachable from this computer: the prototype sign-in is not real authentication.
+      # Only reachable from this computer: the app is served over plain HTTP, so its sign-in cookie isn't Secure.
       - "127.0.0.1:8000:8000"
     env_file:
       - path: .env

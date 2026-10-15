@@ -8,9 +8,9 @@ prelegalHG helps people prepare standard business agreements without starting fr
 
 ## What it does today
 
-### Sign-in
+### Accounts
 
-The app opens on a sign-in page. For now this is a prototype: any email and password let you in, nothing is checked, and the email is only remembered in your browser. The header shows who is signed in and has a Sign out button.
+New users create an account with their name, email and a password of at least 8 characters, and confirm that they understand the documents are drafts subject to legal review. Returning users sign in with their email and password. A sign-in lasts until the browser is closed (set `PRELEGAL_SESSION_DAYS` in `.env` to keep users signed in for a number of days instead). The header links to a new agreement and to My documents, shows who is signed in, and has a Sign out button.
 
 ### Agreement creator
 
@@ -21,8 +21,16 @@ A web application for creating any of the 11 Common Paper agreements listed belo
 - The user can switch to a different agreement part-way through. The parties, effective date, governing law and courts carry over.
 - The completed agreement is shown next to the chat and updates after each answer: a cover page with every term the Standard Terms leave to it, followed by the full Standard Terms. Fields that still need a value are highlighted, and a counter shows how many are left.
 - The user can also edit the fields directly in the "Edit the fields yourself" panel below the chat. The assistant sees those edits.
-- "Start over" begins a new conversation. The conversation is not saved: reloading the page starts again.
+- Once an agreement is chosen it is saved as the user works: the agreement and the whole conversation, a moment after each change. "Start over" begins a new agreement, saved separately.
 - The user can download the agreement as a PDF. It contains the completed cover page and the full Standard Terms. Fields left empty are printed as blank lines so they can be completed by hand.
+
+### My documents
+
+Lists the user's agreements, newest first, with both parties, how many fields are left and when each was last changed. Opening one brings back the agreement and the conversation, so the user can carry on chatting where they left off. Agreements can also be deleted.
+
+### Disclaimer
+
+Every screen's footer, the top of the preview and every page of the PDF say that the documents are drafts, subject to legal review and not legal advice.
 
 The Mutual NDA uses Common Paper's own cover page. For the other agreements the app generates one, grouped into the Order Form, Key Terms, Business Terms or Statement of Work where the agreement has them.
 
@@ -60,7 +68,7 @@ prelegalHG/
   compose.yaml   Runs that image
 ```
 
-The frontend is built into static files, which the backend serves together with its API under `/api`. The backend uses a SQLite database that is temporary: it starts empty every time the application starts.
+The frontend is built into static files, which the backend serves together with its API under `/api`. The backend uses a SQLite database that is temporary: it starts empty every time the application starts, so accounts, sign-ins and saved agreements last until the application is restarted.
 
 ## Running the application
 
@@ -79,7 +87,7 @@ Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) 
 
 If PowerShell refuses to run the Windows scripts, run them with `powershell -ExecutionPolicy Bypass -File scripts\start-windows.ps1`.
 
-Stopping the application discards the database. The application is only reachable from your own computer.
+Stopping the application discards the database, with every account and saved agreement. The application is only reachable from your own computer.
 
 ## Development
 
@@ -98,7 +106,7 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:3000. The development server forwards `/api` requests to the backend at http://localhost:8000. The prototype sign-in works without the backend; the AI assistant needs it.
+Then open http://localhost:3000. The development server forwards `/api` requests to the backend at http://localhost:8000, so signing in, saving and the AI assistant all need it running.
 
 To run the complete application without Docker, build the frontend and start the backend, which serves the build:
 

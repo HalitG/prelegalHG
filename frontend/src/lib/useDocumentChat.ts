@@ -19,10 +19,15 @@ export interface DocumentChat {
 
 /**
  * The conversation with the AI assistant. Each reply comes with the agreement as the assistant left it, which is
- * passed to `onState`. Nothing is stored: a page load starts a new conversation.
+ * passed to `onState`. It starts with the greeting, or with `initialMessages` when a saved agreement is reopened.
  */
-export function useDocumentChat(state: DocState, onState: (state: DocState) => void, today: string): DocumentChat {
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+export function useDocumentChat(
+  state: DocState,
+  onState: (state: DocState) => void,
+  today: string,
+  initialMessages: ChatMessage[] = [GREETING],
+): DocumentChat {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const pending = useRef<AbortController | null>(null);

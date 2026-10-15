@@ -1,4 +1,6 @@
+import { apiFetch } from "./api";
 import type { DocState } from "./documents/types";
+import { jsonRequest } from "./http";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -43,15 +45,14 @@ export async function sendChat(
 ): Promise<ChatResult> {
   let response: Response;
   try {
-    response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, ...state, today }),
-      signal,
-    });
+    response = await apiFetch("/api/chat", { ...jsonRequest("POST", { messages, ...state, today }), signal });
   } catch (error) {
     if (signal?.aborted) throw error;
     throw new ChatError("Couldn't reach the assistant. Check your connection and try again.");
+  }
+  if (response.status === 401) {
+    // The page is already on its way back to the sign-in screen.
+    throw new ChatError("Your sign-in has ended. Please sign in again.");
   }
   if (response.status === 503) {
     throw new ChatError("The AI assistant isn't available: the server has no OpenAI API key set up.");
