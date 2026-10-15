@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from tests.auth_helpers import sign_up
 from tests.chat_helpers import EMPTY_PARTY, a_party, chat_body
 
 pytestmark = pytest.mark.live
@@ -21,6 +22,7 @@ def live_client(settings: Settings):
     if not API_KEY:
         pytest.skip("OPENAI_API_KEY is not set")
     with TestClient(create_app(replace(settings, openai_api_key=API_KEY))) as client:
+        sign_up(client)
         yield client
 
 

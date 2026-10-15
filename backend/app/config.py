@@ -25,6 +25,9 @@ class Settings:
     """Enables the AI chat. Without it the app still runs, and /api/chat answers 503."""
     openai_model: str = "gpt-5.4-mini"
     """The OpenAI model behind the AI chat."""
+    session_days: int | None = None
+    """How long a sign-in lasts. None: until the browser is closed (or the user signs out, or the app restarts,
+    which empties the database). A number of days keeps the user signed in that long."""
 
     @classmethod
     def from_env(cls, env_file: Path = REPO_DIR / ".env") -> Self:
@@ -38,4 +41,14 @@ class Settings:
             db_path=Path(env.get("PRELEGAL_DB_PATH", BACKEND_DIR / "data" / "prelegal.db")),
             static_dir=Path(env.get("PRELEGAL_STATIC_DIR", REPO_DIR / "frontend" / "out")),
             openai_api_key=env.get("OPENAI_API_KEY") or None,
+            session_days=_positive_int(env.get("PRELEGAL_SESSION_DAYS"), "PRELEGAL_SESSION_DAYS"),
         )
+
+
+def _positive_int(value: str | None, name: str) -> int | None:
+    """None for a missing or empty variable; otherwise a whole number of at least 1."""
+    if not value:
+        return None
+    if not value.isdigit() or int(value) < 1:
+        raise ValueError(f"{name} must be a whole number of at least 1, not {value!r}")
+    return int(value)

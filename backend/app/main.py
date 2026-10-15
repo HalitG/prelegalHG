@@ -35,6 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
         openapi_url="/api/openapi.json",
     )
+    app.state.settings = settings
     # None without an API key: /api/chat then answers 503.
     app.state.chat_service = OpenAIChatService.from_settings(settings) if settings.openai_api_key else None
     app.include_router(api_router, prefix="/api")

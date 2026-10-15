@@ -20,11 +20,8 @@ from app.chat import (
 from app.config import Settings
 from app.documents import REGISTRY
 from app.main import create_app
-from tests.chat_helpers import EMPTY_PARTY, GREETING, NO_PARTIES, a_party, chat_body
-
-ACME = a_party("Acme, Inc.", "Jo Smith", "CEO", "jo@acme.com")
-GLOBEX = a_party("Globex Corporation", "Sam Lee", "COO", "sam@globex.com")
-
+from tests.auth_helpers import sign_up
+from tests.chat_helpers import ACME, EMPTY_PARTY, GLOBEX, GREETING, NO_PARTIES, a_party, chat_body, complete_nda_values
 
 def a_turn(document: str = "", reply: str = "Thanks!", next_question: str = "What next?", **updates: str) -> Turn:
     """The model's answer. Keyword arguments are field updates; use party1_company for "party1.company"."""
@@ -38,12 +35,6 @@ def a_turn(document: str = "", reply: str = "Thanks!", next_question: str = "Wha
 
 def a_request(*messages: str, **state) -> ChatRequest:
     return ChatRequest.model_validate(chat_body(*messages, **state))
-
-
-def complete_nda_values(**changes: str) -> dict:
-    values = {field.key: "x" for field in REGISTRY.by_id["mutual-nda"].fields}
-    return {**values, "effectiveDate": "2026-11-01", "mndaTerm": "expires", "mndaTermYears": "1",
-            "confidentialityTerm": "perpetual", "confidentialityYears": "", **changes}
 
 
 class FakeChatService:
@@ -70,6 +61,7 @@ def chat_client(settings: Settings, fake_service: FakeChatService):
     app = create_app(settings)
     app.dependency_overrides[get_chat_service] = lambda: fake_service
     with TestClient(app) as client:
+        sign_up(client)
         yield client
 
 
@@ -106,11 +98,21 @@ def test_chat_passes_the_conversation_agreement_and_date_to_the_service(
     assert request.today == date(2026, 10, 15)
 
 
-def test_chat_without_an_api_key_is_unavailable_but_the_app_still_runs(client: TestClient):
-    response = client.post("/api/chat", json=chat_body("Hello"))
+def test_chat_without_an_api_key_is_unavailable_but_the_app_still_runs(signed_in: TestClient):
+    response = signed_in.post("/api/chat", json=chat_body("Hello"))
     assert response.status_code == 503
     assert "OPENAI_API_KEY" in response.json()["detail"]
-    assert client.get("/api/health").status_code == 200
+    assert signed_in.get("/api/health").status_code == 200
+
+
+def test_chat_is_only_for_signed_in_users(settings: Settings, fake_service: FakeChatService):
+    app = create_app(settings)
+    app.dependency_overrides[get_chat_service] = lambda: fake_service
+    with TestClient(app) as client:
+        response = client.post("/api/chat", json=chat_body("Hello"))
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Please sign in."}
+    assert fake_service.requests == []
 
 
 def test_an_api_key_enables_the_openai_service(settings: Settings):

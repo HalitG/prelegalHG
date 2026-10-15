@@ -5,7 +5,7 @@ import pytest
 
 from app.config import BACKEND_DIR, REPO_DIR, Settings
 
-VARIABLES = ("PRELEGAL_DB_PATH", "PRELEGAL_STATIC_DIR", "OPENAI_API_KEY")
+VARIABLES = ("PRELEGAL_DB_PATH", "PRELEGAL_STATIC_DIR", "OPENAI_API_KEY", "PRELEGAL_SESSION_DAYS")
 
 
 @pytest.fixture(autouse=True)
@@ -20,6 +20,7 @@ def test_defaults_point_at_the_checkout(tmp_path: Path):
     assert settings.static_dir == REPO_DIR / "frontend" / "out"
     assert settings.openai_api_key is None
     assert settings.openai_model == "gpt-5.4-mini"
+    assert settings.session_days is None
 
 
 def test_reads_the_env_file_in_the_repo_root_by_default(monkeypatch: pytest.MonkeyPatch):
@@ -60,3 +61,18 @@ def test_an_empty_api_key_counts_as_none(tmp_path: Path, line: str):
     env_file = tmp_path / ".env"
     env_file.write_text(line + "\n")
     assert Settings.from_env(env_file=env_file).openai_api_key is None
+
+
+@pytest.mark.parametrize(("value", "days"), [("", None), ("7", 7), ("30", 30)])
+def test_reads_how_long_a_sign_in_lasts(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, value: str, days):
+    monkeypatch.setenv("PRELEGAL_SESSION_DAYS", value)
+    assert Settings.from_env(env_file=tmp_path / "missing.env").session_days == days
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "1.5", "a week"])
+def test_rejects_a_sign_in_length_that_is_not_a_whole_number_of_days(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, value: str
+):
+    monkeypatch.setenv("PRELEGAL_SESSION_DAYS", value)
+    with pytest.raises(ValueError, match="PRELEGAL_SESSION_DAYS"):
+        Settings.from_env(env_file=tmp_path / "missing.env")
