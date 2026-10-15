@@ -66,7 +66,7 @@ The frontend is built into static files, which the backend serves together with 
 
 Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) (on Linux, Docker Engine with Docker Compose 2.24 or later).
 
-1. Copy `.env.example` to `.env` and add your OpenAI API key. The application starts without it, but the AI assistant needs it.
+1. Create a `.env` file in the project root containing your OpenAI API key: `OPENAI_API_KEY=<your key>`. The application starts without it, but the AI assistant needs it.
 2. Start the application with the script for your system. It builds the container, starts it, and waits until it is ready:
 
    | System  | Start                          | Stop                          |

@@ -17,7 +17,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 if (-not (Test-Path (Join-Path $root ".env"))) {
-    Write-Host "Note: there is no .env file. Copy .env.example to .env and add your OpenAI API key for the AI features."
+    Write-Host "Note: there is no .env file. Create one containing OPENAI_API_KEY=<your key> for the AI features."
 }
 
 Write-Host "Building and starting prelegal..."
