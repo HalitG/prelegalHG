@@ -5,6 +5,8 @@ description = "The prelegal web app: a JSON API, the static frontend and a tempo
 requires-python = ">=3.14"
 dependencies = [
     "fastapi>=0.143.0",
+    "openai>=3.31.0",
+    "python-dotenv>=1.2.4",
     "uvicorn>=0.54.0",
 ]
 
@@ -21,6 +23,10 @@ package = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-# Smoke tests need a running container, so they only run when asked for with `-m smoke`.
-addopts = "-m 'not smoke'"
-markers = ["smoke: checks the running Docker container (start it with scripts/start-*)"]
+# Smoke tests need a running container, and live tests call OpenAI, so they only run when asked for with `-m smoke`
+# or `-m live`.
+addopts = "-m 'not smoke and not live'"
+markers = [
+    "smoke: checks the running Docker container (start it with scripts/start-*)",
+    "live: calls the real OpenAI API (needs OPENAI_API_KEY in .env)",
+]
