@@ -12,7 +12,7 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 if [ ! -f .env ]; then
-  echo "Note: there is no .env file. Copy .env.example to .env and add your OpenAI API key for the AI features."
+  echo "Note: there is no .env file. Create one containing OPENAI_API_KEY=<your key> for the AI features."
 fi
 
 echo "Building and starting prelegal..."

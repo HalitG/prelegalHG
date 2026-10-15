@@ -3,7 +3,6 @@
 # ===========================
 .env
 .env.*
-!.env.example
 *.pem
 *.key
 
@@ -67,6 +66,8 @@ node_modules/
 # Next.js build output
 .next/
 out/
+# The agreements' text, parsed from templates/ by frontend/scripts/build-documents.mts
+frontend/public/documents/
 next-env.d.ts
 
 # TypeScript

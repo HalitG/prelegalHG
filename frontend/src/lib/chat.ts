@@ -1,4 +1,4 @@
-import type { NdaFormData } from "./nda/types";
+import type { DocState } from "./documents/types";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -8,30 +8,36 @@ export interface ChatMessage {
 /** The longest message the backend accepts (`ChatMessage` in backend/app/chat.py). */
 export const MAX_MESSAGE_LENGTH = 4000;
 
-export interface ChatResult {
+export interface ChatResult extends DocState {
   reply: string;
-  /** The complete updated fields, which replace the current ones. */
-  fields: NdaFormData;
+  /** The assistant's next question. "" only once the agreement is complete. */
+  nextQuestion: string;
 }
 
 /** The assistant's opening message. It is part of the page, so the chat starts without calling the API. */
 export const GREETING: ChatMessage = {
   role: "assistant",
   content:
-    "Hi! I'll help you prepare a Mutual Non-Disclosure Agreement. I'll ask a few questions and fill in the " +
-    "agreement as we go.\n\nTo start: which two companies are entering into the NDA, and who will sign for each?",
+    "Hi! I'll help you prepare a legal agreement, such as an NDA, a cloud service or software license agreement, " +
+    "a pilot, partnership or professional services agreement, or a data processing agreement. I'll ask a few " +
+    "questions and fill in the agreement as we go.\n\nTo start: what kind of agreement do you need?",
 };
+
+/** The reply and the next question, as one message: the conversation the assistant sees is what the user saw. */
+export function assistantMessage({ reply, nextQuestion }: ChatResult): ChatMessage {
+  return { role: "assistant", content: [reply, nextQuestion].filter(Boolean).join("\n\n") };
+}
 
 /** A chat request that failed. `message` is written for the user. */
 export class ChatError extends Error {
   override name = "ChatError";
 }
 
-/** Sends the conversation so far, which must end with the user's message, and the current fields. */
+/** Sends the conversation so far, which must end with the user's message, and the agreement as it stands. */
 export async function sendChat(
   messages: ChatMessage[],
-  fields: NdaFormData,
-  /** The user's local ISO date, so "today" means the same to the assistant as it does in the preview. */
+  state: DocState,
+  /** The user's local ISO date, so "today" means the same to the assistant as it does to the user. */
   today: string,
   signal?: AbortSignal,
 ): Promise<ChatResult> {
@@ -40,7 +46,7 @@ export async function sendChat(
     response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, fields, today }),
+      body: JSON.stringify({ messages, ...state, today }),
       signal,
     });
   } catch (error) {

@@ -1,0 +1,29 @@
+{
+  "about": "Values that the backend (sanitise in backend/app/documents.py) and the frontend (fieldText in frontend/src/lib/documents/fields.ts) must agree are usable, so the chat and the preview agree on which fields are still missing. Both test suites run these cases.",
+  "cases": [
+    { "document": "mutual-nda", "key": "purpose", "value": "Exploring a deal", "usable": true },
+    { "document": "mutual-nda", "key": "purpose", "value": "  Exploring a deal  ", "usable": true },
+    { "document": "mutual-nda", "key": "purpose", "value": "   ", "usable": false },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "1", "usable": true },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": " 3 ", "usable": true },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "999", "usable": true },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "0", "usable": false },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "1000", "usable": false },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "1.5", "usable": false },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "-1", "usable": false },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "two", "usable": false },
+    { "document": "mutual-nda", "key": "mndaTermYears", "value": "٣", "usable": false },
+    { "document": "mutual-nda", "key": "effectiveDate", "value": "2026-11-01", "usable": true },
+    { "document": "mutual-nda", "key": "effectiveDate", "value": "2028-02-29", "usable": true },
+    { "document": "mutual-nda", "key": "effectiveDate", "value": "2026-02-30", "usable": false },
+    { "document": "mutual-nda", "key": "effectiveDate", "value": "2026-13-01", "usable": false },
+    { "document": "mutual-nda", "key": "effectiveDate", "value": "11/01/2026", "usable": false },
+    { "document": "mutual-nda", "key": "effectiveDate", "value": "tomorrow", "usable": false },
+    { "document": "mutual-nda", "key": "effectiveDate", "value": "٢٠٢٦-11-01", "usable": false },
+    { "document": "mutual-nda", "key": "mndaTerm", "value": "expires", "usable": true },
+    { "document": "mutual-nda", "key": "mndaTerm", "value": "until-terminated", "usable": true },
+    { "document": "mutual-nda", "key": "mndaTerm", "value": "forever", "usable": false },
+    { "document": "csa", "key": "orderDate", "value": "2026-11-01", "usable": true },
+    { "document": "csa", "key": "dpa", "value": "None", "usable": true }
+  ]
+}

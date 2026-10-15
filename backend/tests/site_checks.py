@@ -31,6 +31,12 @@ def assert_site_is_served(client: httpx2.Client) -> None:
     # The PDF renderer loads its fonts from /fonts in the browser.
     assert client.get("/fonts/SourceSerif4-Regular.ttf").status_code == 200
 
+    # The page loads each agreement's text once the chat has chosen it.
+    text = client.get("/documents/csa.json")
+    assert text.status_code == 200
+    assert text.headers["content-type"].startswith("application/json")
+    assert text.json()["terms"][0] == {"type": "heading", "level": 1, "text": "Cloud Service Agreement"}
+
     missing_api = client.get("/api/does-not-exist")
     assert missing_api.status_code == 404
     assert missing_api.json() == {"detail": "Not Found"}

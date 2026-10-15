@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react";
-import { MAX_YEARS } from "@/lib/nda/coverPage";
+import { MAX_YEARS } from "@/lib/documents/fields";
 
 export const inputClass =
   "block rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs ring-1 ring-slate-300 ring-inset placeholder:text-muted focus:ring-2 focus:ring-primary focus:outline-none";
@@ -42,6 +42,7 @@ interface TextFieldProps {
   name?: string;
   autoComplete?: string;
   required?: boolean;
+  maxLength?: number;
 }
 
 export function TextField({
@@ -55,6 +56,7 @@ export function TextField({
   name,
   autoComplete,
   required,
+  maxLength,
 }: TextFieldProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
@@ -65,6 +67,7 @@ export function TextField({
     placeholder,
     autoComplete,
     required,
+    maxLength,
     "aria-describedby": hintId,
     className: `${inputClass} w-full`,
   };

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { MAX_MESSAGE_LENGTH, type ChatMessage } from "@/lib/chat";
-import type { NdaChat as NdaChatState } from "@/lib/useNdaChat";
+import type { DocumentChat as DocumentChatState } from "@/lib/useDocumentChat";
 import { Button } from "./Button";
 import { inputClass } from "./form-controls";
 
@@ -39,21 +39,46 @@ function TypingIndicator() {
   );
 }
 
-/** The conversation with the AI assistant that fills in the agreement. */
-export function NdaChat({ messages, status, error, send, retry, reset }: NdaChatState) {
+/** Whether the user is typing in another field, such as one in the "Edit the fields yourself" panel. */
+function typingElsewhere(input: HTMLTextAreaElement | null) {
+  const active = document.activeElement;
+  return active instanceof HTMLElement && active !== input && active.matches("input, textarea, select, [contenteditable]");
+}
+
+/** The conversation with the AI assistant that chooses and fills in the agreement. */
+export function DocumentChat({ messages, status, error, send, retry, reset }: DocumentChatState) {
   const [draft, setDraft] = useState("");
   const log = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const inputId = useId();
   const sending = status === "sending";
+  const wasSending = useRef(false);
 
   // Keep the latest message in view.
   useEffect(() => {
     if (log.current) log.current.scrollTop = log.current.scrollHeight;
   }, [messages, status]);
 
+  // When the answer arrives, put the cursor back in the message box so the user can reply straight away, unless
+  // they have moved on to another field meanwhile.
+  useEffect(() => {
+    if (wasSending.current && !sending && !typingElsewhere(input.current)) input.current?.focus();
+    wasSending.current = sending;
+  }, [sending]);
+
   function submit() {
     if (send(draft)) setDraft("");
+    input.current?.focus();
+  }
+
+  // Retry and Start over disappear once clicked, which would leave the focus nowhere.
+  function retryAndFocus() {
+    retry();
+    input.current?.focus();
+  }
+
+  function resetAndFocus() {
+    reset();
     input.current?.focus();
   }
 
@@ -73,10 +98,10 @@ export function NdaChat({ messages, status, error, send, retry, reset }: NdaChat
       <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-3">
         <div>
           <h2 className="text-base font-semibold">AI assistant</h2>
-          <p className="text-xs text-muted">Answers fill in the agreement as you chat.</p>
+          <p className="text-xs text-muted">It picks the agreement and fills it in as you chat.</p>
         </div>
         {messages.length > 1 && (
-          <Button variant="outline" onClick={reset} className="px-3 py-1.5 text-xs">
+          <Button variant="outline" onClick={resetAndFocus} className="px-3 py-1.5 text-xs">
             Start over
           </Button>
         )}
@@ -101,7 +126,7 @@ export function NdaChat({ messages, status, error, send, retry, reset }: NdaChat
           className="flex items-center justify-between gap-3 border-t border-red-100 bg-red-50 px-5 py-2.5 text-sm text-red-700"
         >
           <span>{error}</span>
-          <Button variant="outline" onClick={retry} className="px-3 py-1 text-xs">
+          <Button variant="outline" onClick={retryAndFocus} className="px-3 py-1 text-xs">
             Retry
           </Button>
         </div>

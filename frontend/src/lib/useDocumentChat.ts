@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ChatError, GREETING, sendChat, type ChatMessage } from "./chat";
-import { defaultFormData, type NdaFormData } from "./nda/types";
+import { assistantMessage, ChatError, GREETING, sendChat, type ChatMessage } from "./chat";
+import { emptyState, type DocState } from "./documents/types";
 
 export type ChatStatus = "idle" | "sending" | "error";
 
-export interface NdaChat {
+export interface DocumentChat {
   messages: ChatMessage[];
   status: ChatStatus;
   /** Why the last message failed, written for the user. Set while `status` is "error". */
@@ -13,15 +13,15 @@ export interface NdaChat {
   send: (text: string) => boolean;
   /** Sends the conversation again after a failure. */
   retry: () => void;
-  /** Starts a new conversation and a blank agreement. */
+  /** Starts a new conversation, with no agreement chosen. */
   reset: () => void;
 }
 
 /**
- * The conversation with the AI assistant. Each reply comes with the complete updated fields, which are passed to
- * `onFields`. Nothing is stored: a page load starts a new conversation.
+ * The conversation with the AI assistant. Each reply comes with the agreement as the assistant left it, which is
+ * passed to `onState`. Nothing is stored: a page load starts a new conversation.
  */
-export function useNdaChat(form: NdaFormData, onFields: (form: NdaFormData) => void, today: string): NdaChat {
+export function useDocumentChat(state: DocState, onState: (state: DocState) => void, today: string): DocumentChat {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -35,11 +35,11 @@ export function useNdaChat(form: NdaFormData, onFields: (form: NdaFormData) => v
     setStatus("sending");
     setError(null);
     try {
-      const result = await sendChat(history, form, today, controller.signal);
+      const result = await sendChat(history, state, today, controller.signal);
       // Starting over, or leaving the page, cancels the request: its reply no longer belongs to the conversation.
       if (controller.signal.aborted) return;
-      setMessages([...history, { role: "assistant", content: result.reply }]);
-      onFields(result.fields);
+      setMessages([...history, assistantMessage(result)]);
+      onState({ document: result.document, values: result.values, parties: result.parties });
       setStatus("idle");
     } catch (caught) {
       if (controller.signal.aborted) return;
@@ -66,7 +66,7 @@ export function useNdaChat(form: NdaFormData, onFields: (form: NdaFormData) => v
     setMessages([GREETING]);
     setStatus("idle");
     setError(null);
-    onFields(defaultFormData);
+    onState(emptyState);
   }
 
   return { messages, status, error, send, retry, reset };

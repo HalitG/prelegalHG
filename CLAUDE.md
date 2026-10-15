@@ -6,7 +6,7 @@ This is a SaaS product to allow users to draft legal agreements based on templat
 
 @catalog.json
 
-So far only the Mutual NDA document is supported, through an AI chat. See "Current status" at the end.
+All the documents in the catalog are supported, through an AI chat. See "Current status" at the end.
 
 ## Development process
 
@@ -54,13 +54,13 @@ scripts/stop-windows.ps1
 
 ## Current status
 
-Done (PL-2, PL-3, PL-4, PL-5):
-- `templates/` holds the 12 Common Paper templates listed in `catalog.json`.
-- Mutual NDA creator in `frontend/` (Next.js, Tailwind): an AI chat (`NdaChat`, `lib/useNdaChat.ts`, `lib/chat.ts`) fills in the fields, with a collapsible "Edit the fields yourself" panel (the original `NdaForm`), a live preview of the Cover Page and Standard Terms, and a PDF download. The agreement text is read from `templates/` at build time.
-- AI chat: `POST /api/chat` (`backend/app/chat.py`) is stateless. The browser sends the conversation, the current fields and today's date; the backend calls OpenAI `gpt-5.4-mini` with Structured Outputs and returns the reply and the complete updated fields. Without `OPENAI_API_KEY` it answers 503. Outside Docker the backend reads `.env` from the repo root. `npm run dev` forwards `/api` to the backend on :8000.
+Done (PL-2 to PL-6):
+- `templates/` holds the 12 Common Paper templates listed in `catalog.json`. `documents.json` defines the 11 agreements (the Mutual NDA cover page template belongs to the Mutual NDA): each one's template, party roles, cover page sections and fields (text, long text, date, choice or years, with an optional suggested default and `showIf` condition). The frontend and the backend both read it; tests check that every term a template leaves to the cover page has a field.
+- Agreement creator in `frontend/` (Next.js, Tailwind): an AI chat (`DocumentChat`, `lib/useDocumentChat.ts`, `lib/chat.ts`) picks the agreement and fills it in, with a collapsible "Edit the fields yourself" panel generated from the fields (`DocumentForm`), a live preview of the cover page and Standard Terms (`DocumentPreview`) and a PDF download (`DocumentPdf`). The Mutual NDA's cover page is worded like its template (`lib/documents/mndaCoverPage.ts`); the others are generated from their fields. `scripts/build-documents.mts` (run before `dev` and `build`) parses the templates into `public/documents/<id>.json`, which the page fetches once an agreement is chosen. After each reply the cursor returns to the message box.
+- AI chat: `POST /api/chat` (`backend/app/chat.py`, `backend/app/documents.py`) is stateless. The browser sends the conversation, the chosen agreement (or null), its values, the two parties and today's date. OpenAI `gpt-5.4-mini` answers with Structured Outputs: the agreement, only the fields it changes (validated and merged by the server), a reply and a separate next question; if the model leaves the question empty while fields are missing, the server asks about the first one. For an unsupported agreement the assistant offers the closest supported one. Switching agreements keeps the parties, effective date, governing law and courts. Without `OPENAI_API_KEY` it answers 503. Outside Docker the backend reads `.env` from the repo root. `npm run dev` forwards `/api` to the backend on :8000.
 - Sign-in is a frontend-only prototype: any email and password work, and the email is kept in localStorage (`frontend/src/lib/session.ts`). It does not use the backend.
 - `backend/` (FastAPI, uv) serves the static frontend export and `/api` (`GET /api/health`, `POST /api/chat`). On every start it recreates the SQLite database with an empty `users` table. Nothing reads or writes that table yet.
-- One Docker image (`Dockerfile`, `compose.yaml`) runs the app at http://localhost:8000 using the start and stop scripts in `scripts/`. `.env` is passed to the container.
+- One Docker image (`Dockerfile`, `compose.yaml`) runs the app at http://localhost:8000 using the start and stop scripts in `scripts/`. `.env` is passed to the container. The image includes `documents.json` and `catalog.json` for the backend (`PRELEGAL_DOCUMENTS_DIR`).
 - Tests: `npm test` in `frontend/` (Vitest) and `uv run pytest` in `backend/`. `uv run pytest -m live` checks the chat against the real OpenAI API; `-m smoke` checks the running container.
 
-Not done yet: real sign-up and sign-in against the `users` table, and agreements other than the Mutual NDA.
+Not done yet: real sign-up and sign-in against the `users` table (PL-7).

@@ -1,8 +1,8 @@
 import { Document, Font, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
-import { SIGNING_STATEMENT, type CoverPageModel, type Piece } from "@/lib/nda/coverPage";
-import type { Run } from "@/lib/nda/markdown";
-import type { MndaTemplate } from "@/lib/nda/template";
+import type { CoverPageModel, Piece } from "@/lib/documents/coverPage";
+import type { Clause, Inline } from "@/lib/documents/parse";
+import type { DocumentDef, DocumentText } from "@/lib/documents/types";
 
 /**
  * Embedded Source Serif 4 (matching the web preview). Unlike the PDF built-in fonts, which only
@@ -74,7 +74,13 @@ const styles = StyleSheet.create({
   tableCell: { width: "36%", paddingVertical: 7, paddingHorizontal: 8 },
   tableHead: { fontFamily: "Helvetica-Bold", fontSize: 7.5, letterSpacing: 1, color: "#64748b" },
   heading: { fontFamily: SERIF, fontWeight: "bold", fontSize: 14, textAlign: "center", marginBottom: 12, color: "#0f172a" },
-  clause: { marginBottom: 7, textAlign: "justify" },
+  groupTitle: { marginTop: 12, marginBottom: 2, fontFamily: "Helvetica-Bold", fontSize: 7.5, letterSpacing: 1.5, color: "#64748b" },
+  sectionHeading: { marginTop: 6, marginBottom: 5, fontFamily: SERIF, fontWeight: "bold", color: "#0f172a" },
+  clause: { flexDirection: "row", marginBottom: 5 },
+  // Wide enough for the longest numbers, such as "13.33".
+  clauseLabel: { width: 32, paddingRight: 4 },
+  clauseBody: { flex: 1 },
+  clauseText: { textAlign: "justify" },
   attribution: { marginTop: 10, fontFamily: "Helvetica", fontSize: 7.5, textAlign: "center", color: "#94a3b8" },
   footer: {
     position: "absolute",
@@ -89,7 +95,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function Runs({ runs }: { runs: Run[] }) {
+function Inlines({ runs }: { runs: Inline[] }) {
   return runs.map((run, i) => {
     switch (run.type) {
       case "text":
@@ -98,7 +104,7 @@ function Runs({ runs }: { runs: Run[] }) {
       case "bold":
         return (
           <Text key={i} style={styles.bold}>
-            {run.text}
+            <Inlines runs={run.children} />
           </Text>
         );
       case "link":
@@ -113,51 +119,95 @@ function Runs({ runs }: { runs: Run[] }) {
 
 const pieceText = (piece: Piece) => (typeof piece === "string" ? piece : piece.value || BLANK);
 
-function PdfPage({ children }: { children: ReactNode }) {
+function PdfPage({ footer, children }: { footer: string; children: ReactNode }) {
   return (
     <Page size="LETTER" style={styles.page}>
       {children}
       <View style={styles.footer} fixed>
-        <Text>Common Paper Mutual Non-Disclosure Agreement (Version 1.0)</Text>
+        <Text>{footer}</Text>
         <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
       </View>
     </Page>
   );
 }
 
-export function NdaPdfDocument({ template, coverPage }: { template: MndaTemplate; coverPage: CoverPageModel }) {
-  return (
-    <Document title="Mutual Non-Disclosure Agreement" creator="prelegal" producer="prelegal">
-      <PdfPage>
-        <Text style={styles.title}>Mutual Non-Disclosure Agreement</Text>
-        <Text style={styles.subtitle}>COVER PAGE</Text>
-        <Text style={[styles.prose, { marginBottom: 12 }]} hyphenationPenalty={NO_HYPHENATION}>
-          <Runs runs={template.coverPageIntro} />
+function ClauseView({ clause, depth }: { clause: Clause; depth: number }) {
+  const children = clause.children.map((child, i) => <ClauseView key={i} clause={child} depth={depth + 1} />);
+  // A top-level clause with a title and no text of its own is a section heading.
+  if (depth === 0 && clause.title && clause.content.length === 0) {
+    return (
+      <View>
+        <Text style={[styles.prose, styles.sectionHeading]} minPresenceAhead={40}>
+          {clause.label} {clause.title}
         </Text>
+        {children}
+      </View>
+    );
+  }
+  return (
+    <View style={styles.clause}>
+      <Text style={[styles.prose, styles.clauseLabel]}>{clause.label}</Text>
+      <View style={styles.clauseBody}>
+        <Text style={[styles.prose, styles.clauseText]} hyphenationPenalty={NO_HYPHENATION}>
+          {clause.title && <Text style={styles.bold}>{clause.title} </Text>}
+          <Inlines runs={clause.content} />
+        </Text>
+        {children.length > 0 && <View style={{ marginTop: 5 }}>{children}</View>}
+      </View>
+    </View>
+  );
+}
 
-        {coverPage.sections.map((section) => (
-          <View key={section.title} style={styles.section} wrap={false}>
-            <View style={styles.sectionLabel}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              {section.caption && <Text style={styles.caption}>{section.caption}</Text>}
-            </View>
-            <View style={styles.sectionBody}>
-              {section.paragraphs.map((paragraph, i) => (
-                <Text key={i} style={styles.prose}>
-                  {paragraph.map(pieceText).join("")}
-                </Text>
-              ))}
-            </View>
+interface DocumentPdfProps {
+  document: DocumentDef;
+  text: DocumentText;
+  coverPage: CoverPageModel;
+}
+
+export function DocumentPdf({ document, text, coverPage }: DocumentPdfProps) {
+  const footer = `Common Paper ${document.name}`;
+  return (
+    <Document title={document.name} creator="prelegal" producer="prelegal">
+      <PdfPage footer={footer}>
+        <Text style={styles.title}>{document.name}</Text>
+        <Text style={styles.subtitle}>COVER PAGE</Text>
+        {text.intro && (
+          <Text style={[styles.prose, { marginBottom: 12 }]} hyphenationPenalty={NO_HYPHENATION}>
+            <Inlines runs={text.intro} />
+          </Text>
+        )}
+
+        {coverPage.groups.map((group, i) => (
+          <View key={group.title ?? i}>
+            {group.title && <Text style={styles.groupTitle}>{group.title.toUpperCase()}</Text>}
+            {group.sections.map((section) => (
+              <View key={section.title} style={styles.section} wrap={false}>
+                <View style={styles.sectionLabel}>
+                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  {section.caption && <Text style={styles.caption}>{section.caption}</Text>}
+                </View>
+                <View style={styles.sectionBody}>
+                  {section.paragraphs.map((paragraph, j) => (
+                    <Text key={j} style={styles.prose}>
+                      {paragraph.map(pieceText).join("")}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            ))}
           </View>
         ))}
 
-        <Text style={[styles.prose, { marginTop: 14, marginBottom: 8 }]}>{SIGNING_STATEMENT}</Text>
+        <Text style={[styles.prose, { marginTop: 14, marginBottom: 8 }]}>{coverPage.signingStatement}</Text>
 
         <View wrap={false}>
           <View style={[styles.tableRow, { borderBottomColor: "#94a3b8" }]}>
             <Text style={styles.tableLabel} />
-            <Text style={[styles.tableCell, styles.tableHead]}>PARTY 1</Text>
-            <Text style={[styles.tableCell, styles.tableHead]}>PARTY 2</Text>
+            {coverPage.roles.map((role) => (
+              <Text key={role} style={[styles.tableCell, styles.tableHead]}>
+                {role.toUpperCase()}
+              </Text>
+            ))}
           </View>
           {coverPage.signatureRows.map((row) => (
             <View key={row.label} style={[styles.tableRow, { minHeight: row.tall ? 40 : 26 }]}>
@@ -175,8 +225,8 @@ export function NdaPdfDocument({ template, coverPage }: { template: MndaTemplate
         </View>
       </PdfPage>
 
-      <PdfPage>
-        {template.standardTerms.map((block, i) => {
+      <PdfPage footer={footer}>
+        {text.terms.map((block, i) => {
           switch (block.type) {
             case "heading":
               return (
@@ -185,15 +235,11 @@ export function NdaPdfDocument({ template, coverPage }: { template: MndaTemplate
                 </Text>
               );
             case "clause":
-              return (
-                <Text key={i} style={[styles.prose, styles.clause]} hyphenationPenalty={NO_HYPHENATION}>
-                  {block.number}. <Runs runs={block.runs} />
-                </Text>
-              );
+              return <ClauseView key={i} clause={block} depth={0} />;
             case "paragraph":
               return (
                 <Text key={i} style={styles.attribution} hyphenationPenalty={NO_HYPHENATION}>
-                  <Runs runs={block.runs} />
+                  <Inlines runs={block.content} />
                 </Text>
               );
           }
