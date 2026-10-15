@@ -36,6 +36,13 @@ describe("sendChat", () => {
     await expect(sendChat(messages, emptyState, "2026-10-15")).resolves.toEqual(result);
   });
 
+  it("explains when the sign-in has ended", async () => {
+    fetchMock.mockResolvedValue(json({ detail: "Please sign in." }, 401));
+    await expect(sendChat(messages, state, "2026-10-15")).rejects.toThrow(
+      new ChatError("Your sign-in has ended. Please sign in again."),
+    );
+  });
+
   it("explains when the server has no OpenAI API key", async () => {
     fetchMock.mockResolvedValue(json({ detail: "not configured" }, 503));
     await expect(sendChat(messages, state, "2026-10-15")).rejects.toThrow(

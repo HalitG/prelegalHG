@@ -11,4 +11,13 @@ describe("Button", () => {
   it("uses purple for the secondary variant, which is reserved for submitting forms", () => {
     expect(renderToStaticMarkup(<Button variant="secondary">Go</Button>)).toContain("bg-secondary");
   });
+
+  it("shows a spinner and can't be pressed while its action runs", () => {
+    const html = renderToStaticMarkup(<Button loading>Save</Button>);
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain("disabled");
+    expect(html).toContain("animate-spin");
+    expect(html).toContain("Save");
+    expect(renderToStaticMarkup(<Button>Save</Button>)).not.toContain("aria-busy");
+  });
 });

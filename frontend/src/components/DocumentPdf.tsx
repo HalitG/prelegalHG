@@ -1,5 +1,6 @@
 import { Document, Font, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
+import { DISCLAIMER_SHORT } from "@/lib/disclaimer";
 import type { CoverPageModel, Piece } from "@/lib/documents/coverPage";
 import type { Clause, Inline } from "@/lib/documents/parse";
 import type { DocumentDef, DocumentText } from "@/lib/documents/types";
@@ -93,6 +94,16 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
     color: "#94a3b8",
   },
+  disclaimer: {
+    position: "absolute",
+    bottom: 24,
+    left: 72,
+    right: 72,
+    textAlign: "center",
+    fontFamily: "Helvetica",
+    fontSize: 7,
+    color: "#94a3b8",
+  },
 });
 
 function Inlines({ runs }: { runs: Inline[] }) {
@@ -127,6 +138,9 @@ function PdfPage({ footer, children }: { footer: string; children: ReactNode }) 
         <Text>{footer}</Text>
         <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
       </View>
+      <Text style={styles.disclaimer} fixed>
+        {DISCLAIMER_SHORT}
+      </Text>
     </Page>
   );
 }

@@ -10,6 +10,8 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, "src") },
   },
   test: {
+    // next.config.ts sets trailingSlash, which next/link reads from here; without it links lose their slash.
+    env: { __NEXT_TRAILING_SLASH: "true" },
     execArgv: process.allowedNodeEnvironmentFlags.has(disableNodeWebStorage) ? [disableNodeWebStorage] : [],
   },
 });
