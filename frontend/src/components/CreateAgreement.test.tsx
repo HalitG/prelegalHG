@@ -50,6 +50,7 @@ afterEach(() => {
 describe("CreateAgreement", () => {
   it("starts a new agreement without loading anything", () => {
     render(<CreateAgreement documents={documents} />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Create a Legal Agreement");
     expect(screen.getByRole("log", { name: "Conversation" }).textContent).toContain("what kind of agreement");
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -61,6 +62,7 @@ describe("CreateAgreement", () => {
 
     const log = await screen.findByRole("log", { name: "Conversation" });
     expect(within(log).getByText("An NDA with Initech")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Edit the Mutual Non-Disclosure Agreement");
     const preview = screen.getByRole("article", { name: "Mutual Non-Disclosure Agreement preview" });
     expect(preview.textContent).toContain("Exploring a merger");
     expect(preview.textContent).toContain("Initech");

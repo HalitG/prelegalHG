@@ -15,6 +15,7 @@ import { DocumentChat } from "./DocumentChat";
 import { DocumentForm } from "./DocumentForm";
 import { DocumentPreview, EmptyPreview } from "./DocumentPreview";
 import { DownloadButton } from "./DownloadButton";
+import { PageHeading } from "./PageHeading";
 
 const SAVE_LABELS: Record<SaveStatus, string> = {
   idle: "",
@@ -86,6 +87,19 @@ export function DocumentCreator({ documents, initial, onStartOver }: DocumentCre
 
   return (
     <div>
+      {/* A saved agreement is named after what it is now: the chat may switch it to another kind. */}
+      {initial ? (
+        <PageHeading title={`Edit the ${document?.name ?? "Agreement"}`}>
+          Carry on chatting with the AI assistant, or edit the fields yourself. Your changes are saved as you go,
+          and you can download the agreement as a PDF.
+        </PageHeading>
+      ) : (
+        <PageHeading title="Create a Legal Agreement">
+          Chat with the AI assistant about what you need. It picks the right Common Paper agreement, asks for the
+          key terms and both parties&rsquo; details, and fills in the agreement as you go. Your work is saved as you
+          go, and you can download it as a PDF.
+        </PageHeading>
+      )}
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
         <div className="space-y-4">
           <DocumentChat {...chat} reset={startOver} />

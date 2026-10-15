@@ -7,6 +7,7 @@ import { loadDocument } from "@/lib/savedDocuments";
 import { useLoaded } from "@/lib/useLoaded";
 import { Button, buttonClass } from "./Button";
 import { DocumentCreator } from "./DocumentCreator";
+import { PageHeading } from "./PageHeading";
 
 /**
  * The agreement creator: a new agreement, or the saved one in `?doc=<id>` (the static export has no per-agreement
@@ -34,30 +35,39 @@ function SavedAgreement({
   if (loaded.status === "ready") {
     return <DocumentCreator documents={documents} initial={loaded.data} onStartOver={onStartOver} />;
   }
+  const heading = <PageHeading title="Edit an Agreement">Opening it from My documents.</PageHeading>;
   if (loaded.status === "loading") {
     return (
-      <div role="status" className="rounded-2xl bg-white px-6 py-16 text-center text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
-        Opening your agreement…
-      </div>
+      <>
+        {heading}
+        <div role="status" className="rounded-2xl bg-white px-6 py-16 text-center text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
+          Opening your agreement…
+        </div>
+      </>
     );
   }
   const notFound = loaded.error.status === 404;
   return (
-    <div role="alert" className="rounded-2xl bg-white px-6 py-12 text-center shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-lg font-semibold">{notFound ? "We couldn't find that agreement" : "Couldn't open the agreement"}</h2>
-      <p className="mt-2 text-sm text-slate-600">
-        {notFound ? "It may have been deleted. Your other agreements are in My documents." : loaded.error.message}
-      </p>
-      <div className="mt-6 flex justify-center gap-3">
-        {!notFound && (
-          <Button variant="outline" onClick={retry}>
-            Try again
-          </Button>
-        )}
-        <Link href="/documents/" className={buttonClass("primary")}>
-          My documents
-        </Link>
+    <>
+      {heading}
+      <div role="alert" className="rounded-2xl bg-white px-6 py-12 text-center shadow-sm ring-1 ring-slate-200">
+        <h2 className="text-lg font-semibold">
+          {notFound ? "We couldn't find that agreement" : "Couldn't open the agreement"}
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          {notFound ? "It may have been deleted. Your other agreements are in My documents." : loaded.error.message}
+        </p>
+        <div className="mt-6 flex justify-center gap-3">
+          {!notFound && (
+            <Button variant="outline" onClick={retry}>
+              Try again
+            </Button>
+          )}
+          <Link href="/documents/" className={buttonClass("primary")}>
+            My documents
+          </Link>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

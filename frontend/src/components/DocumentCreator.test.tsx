@@ -396,13 +396,15 @@ describe("DocumentCreator", () => {
       updatedAt: "now",
     };
     render(<DocumentCreator documents={documents} initial={saved} />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Edit the Mutual Non-Disclosure Agreement");
     expect(conversation().getByText("An NDA with Globex")).toBeTruthy();
     expect(preview().textContent).toContain("Globex Corporation");
     expect(screen.getByText("Saved")).toBeTruthy();
 
-    answer("Thanks.", { document: "mutual-nda", values: { purpose: "A deal" }, parties });
-    await say("It's for a deal");
-    expect(requestBody().messages).toEqual([...messages, { role: "user", content: "It's for a deal" }]);
+    answer("A Cloud Service Agreement suits that better.", { document: "csa", parties });
+    await say("Actually it's for our hosted software");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Edit the Cloud Service Agreement");
+    expect(requestBody().messages).toEqual([...messages, { role: "user", content: "Actually it's for our hosted software" }]);
     await waitForSave();
     expect(saves()[0].id).toBe("c".repeat(32));
     expect(saves()[0].body.revision).toBe(5);
