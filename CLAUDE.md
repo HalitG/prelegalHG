@@ -2,11 +2,11 @@
 
 ## Overview
 
-This is a SaaS product to allow users to draft legal agreements based on templates in the templates directory. The user can use AI chat in order to establish what document they want and how to fill in the fields. The available documents are coveres as catalog.json file in the project root: included here:
+This is a SaaS product to allow users to draft legal agreements based on templates in the templates directory. The user can use AI chat in order to establish what document they want and how to fill in the fields. The available documents are covered in the catalog.json file in the project root, included here:
 
 @catalog.json
 
-Beforew we start: the initial implementation is a frontend-only prototype that only supports the Mutual NDA document with no AI chat.
+So far only the Mutual NDA document is supported, through an AI chat. See "Current status" at the end.
 
 ## Development process
 
@@ -18,7 +18,7 @@ When instructed to build a feature:
 
 ## AI design
 
-When writing code to make call to LLMs, use OpenAI to the gpt-oss-120b model. You should use Structured Outputs so that you can interpret the results and populate fields in the legal document.
+When writing code to make call to LLMs, use OpenAI with the gpt-5.4-mini model. You should use Structured Outputs so that you can interpret the results and populate fields in the legal document.
 
 There is an OPENAI_API_KEY in the .env file in the project root.
 
@@ -28,7 +28,7 @@ The entire project should be packaged into a Docker container.
 The backend should be in backend/ and be a uv project, using FastAPI.
 The frontend should be in frontend/
 The database should use SQLite and be created from scratch each time the Docker container is brought up, allowing for a users table with sign up and sign in.
-Consider statically building the frontend and serving via FastAPI, if that will work.
+The frontend is built as a static Next.js export and served by FastAPI.
 There should be scripts in scripts/ for:
 ```bash
 # Mac 
@@ -44,10 +44,23 @@ scripts/start-windows.ps1
 scripts/stop-windows.ps1
 ```
 
-# Color Scheme
+## Color Scheme
 
 - Accent Yellow: ```#ecad0a```
 - Blue Primary: ```#209dd7```
 - Purple Secondary: ```#753991``` (submit buttons)
 - Dark Navy: ```#032147``` (headings)
 - Gray Text: ```#888888```
+
+## Current status
+
+Done (PL-2, PL-3, PL-4, PL-5):
+- `templates/` holds the 12 Common Paper templates listed in `catalog.json`.
+- Mutual NDA creator in `frontend/` (Next.js, Tailwind): an AI chat (`NdaChat`, `lib/useNdaChat.ts`, `lib/chat.ts`) fills in the fields, with a collapsible "Edit the fields yourself" panel (the original `NdaForm`), a live preview of the Cover Page and Standard Terms, and a PDF download. The agreement text is read from `templates/` at build time.
+- AI chat: `POST /api/chat` (`backend/app/chat.py`) is stateless. The browser sends the conversation, the current fields and today's date; the backend calls OpenAI `gpt-5.4-mini` with Structured Outputs and returns the reply and the complete updated fields. Without `OPENAI_API_KEY` it answers 503. Outside Docker the backend reads `.env` from the repo root. `npm run dev` forwards `/api` to the backend on :8000.
+- Sign-in is a frontend-only prototype: any email and password work, and the email is kept in localStorage (`frontend/src/lib/session.ts`). It does not use the backend.
+- `backend/` (FastAPI, uv) serves the static frontend export and `/api` (`GET /api/health`, `POST /api/chat`). On every start it recreates the SQLite database with an empty `users` table. Nothing reads or writes that table yet.
+- One Docker image (`Dockerfile`, `compose.yaml`) runs the app at http://localhost:8000 using the start and stop scripts in `scripts/`. `.env` is passed to the container.
+- Tests: `npm test` in `frontend/` (Vitest) and `uv run pytest` in `backend/`. `uv run pytest -m live` checks the chat against the real OpenAI API; `-m smoke` checks the running container.
+
+Not done yet: real sign-up and sign-in against the `users` table, and agreements other than the Mutual NDA.
